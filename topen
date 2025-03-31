@@ -23,8 +23,8 @@ TASK_DATA_DIR = os.getenv("TASKDATA", "~/.local/share/task")
 TOPEN_DIR = os.getenv("TOPEN_DIR", "~/.local/share/task/notes")
 TOPEN_EXT = os.getenv("TOPEN_EXT", "md")
 TOPEN_ANNOT = os.getenv("TOPEN_ANNOT", "Note")
-
 TOPEN_EDITOR = os.getenv("EDITOR") or os.getenv("VISUAL", "nano")
+TOPEN_QUIET = os.getenv("TOPEN_QUIET", False)
 
 
 def parse_cli() -> argparse.Namespace:
@@ -37,6 +37,12 @@ def parse_cli() -> argparse.Namespace:
         "--notes-dir",
         default=TOPEN_DIR,
         help="Location of topen notes files",
+    )
+    _ = parser.add_argument(
+        "--quiet",
+        default=TOPEN_QUIET,
+        action="store_true",
+        help="Silence any verbose displayed information",
     )
     _ = parser.add_argument(
         "--extension", default=TOPEN_EXT, help="Extension of note files"
@@ -56,16 +62,27 @@ def parse_cli() -> argparse.Namespace:
     return parser.parse_args()
 
 
+IS_QUIET = False
+
+
+def whisper(text: str) -> None:
+    if not IS_QUIET:
+        print(text)
+
+
 def main():
     args = parse_cli()
 
     if not args.id:
         _ = sys.stderr.write("Please provide task ID as argument.\n")
+    if args.quiet:
+        global IS_QUIET
+        IS_QUIET = True
 
     task = get_task(id=args.id, data_location=args.task_data)
     uuid = task["uuid"]
     if not uuid:
-        _ = sys.stderr.write(f"Could not find task for id: {args.id}.")
+        _ = sys.stderr.write(f"Could not find task for ID: {args.id}.")
         sys.exit(1)
     fname = get_notes_file(uuid, notes_dir=args.notes_dir, notes_ext=args.extension)
 
@@ -91,7 +108,7 @@ def get_notes_file(
 
 
 def open_editor(file: Path, editor: str = TOPEN_EDITOR) -> None:
-    _ = sys.stderr.write(f"Editing note {file}\n")
+    _ = whisper(f"Editing note: {file}")
     proc = subprocess.Popen(f"{editor} {file}", shell=True)
     _ = proc.wait()
 
@@ -103,7 +120,7 @@ def add_annotation_if_missing(
         if annot["description"] == annotation_content:
             return
     task.add_annotation(annotation_content)
-    _ = sys.stderr.write("Added annotation.\n")
+    _ = whisper(f"Added annotation: {annotation_content}")
 
 
 if __name__ == "__main__":
