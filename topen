@@ -1,0 +1,50 @@
+#!/usr/bin/env python
+# Open or create a note file
+# for a taskwarrior task.
+# Takes a taskwarrior ID or UUID for a single task.
+# Edits an existing task note file,
+# or creates a new one.
+
+import subprocess
+import sys
+from pathlib import Path
+
+from tasklib import Task, TaskWarrior
+
+TASK_DATA_DIR = "~/.local/share/task"
+
+TASKNOTES_DIR = "~/.local/share/task/notes"
+TASKNOTES_EXT = "md"
+TASKNOTES_ANNOT = "Note"
+
+tw = TaskWarrior(data_location=TASK_DATA_DIR)
+
+args = sys.argv
+
+if not len(args) == 2:
+    _ = sys.stderr.write("Please provide task ID as argument.\n")
+    sys.exit(1)
+
+given_id = args[1]
+
+try:
+    t = tw.tasks.get(id=given_id)
+except Task.DoesNotExist:
+    t = tw.tasks.get(uuid=given_id)
+
+_ = sys.stderr.write(f"Editing note for: {t['description']} ({t['uuid']})\n")
+
+notes_file = Path(TASKNOTES_DIR).joinpath(f"{t['uuid']}.{TASKNOTES_EXT}")
+
+proc = subprocess.Popen(f"nvim {notes_file}", shell=True)
+_ = proc.wait()
+
+def add_annotation_if_missing(task: Task) -> None:
+    for annot in t["annotations"]:
+        if annot["description"] == "Note":
+            return
+    t.add_annotation(TASKNOTES_ANNOT)
+    _ = sys.stderr.write(f"Added annotation.\n")
+
+
+add_annotation_if_missing(t)
