@@ -36,13 +36,12 @@ def parse_cli() -> argparse.Namespace:
         "-d",
         "--notes-dir",
         default=TOPEN_DIR,
-        help="Location of topen notes",
+        help="Location of topen notes files",
     )
     _ = parser.add_argument(
-        "-x", "--extension", default=TOPEN_EXT, help="Extension of note files"
+        "--extension", default=TOPEN_EXT, help="Extension of note files"
     )
     _ = parser.add_argument(
-        "-t",
         "--annotation",
         default=TOPEN_ANNOT,
         help="Annotation content to set within taskwarrior",
