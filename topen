@@ -24,6 +24,8 @@ TOPEN_DIR = os.getenv("TOPEN_DIR", "~/.local/share/task/notes")
 TOPEN_EXT = os.getenv("TOPEN_EXT", "md")
 TOPEN_ANNOT = os.getenv("TOPEN_ANNOT", "Note")
 
+TOPEN_EDITOR = os.getenv("EDITOR") or os.getenv("VISUAL", "nano")
+
 
 def parse_cli() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Taskwarrior note editing made easy.")
@@ -48,6 +50,9 @@ def parse_cli() -> argparse.Namespace:
     _ = parser.add_argument(
         "--task-data", default=TASK_DATA_DIR, help="Location of taskwarrior data"
     )
+    _ = parser.add_argument(
+        "--editor", default=TOPEN_EDITOR, help="Program to open note files with"
+    )
 
     return parser.parse_args()
 
@@ -65,8 +70,7 @@ def main():
         sys.exit(1)
     fname = get_notes_file(uuid, notes_dir=args.notes_dir, notes_ext=args.extension)
 
-    # TODO: Add editor choice
-    open_editor(fname)
+    open_editor(fname, editor=args.editor)
 
     add_annotation_if_missing(task, annotation_content=args.annotation)
 
@@ -87,7 +91,7 @@ def get_notes_file(
     return Path(notes_dir).joinpath(f"{uuid}.{notes_ext}")
 
 
-def open_editor(file: Path, editor: str = "nvim") -> None:
+def open_editor(file: Path, editor: str = TOPEN_EDITOR) -> None:
     _ = sys.stderr.write(f"Editing note {file}\n")
     proc = subprocess.Popen(f"{editor} {file}", shell=True)
     _ = proc.wait()
