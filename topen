@@ -5,18 +5,24 @@
 # Edits an existing task note file,
 # or creates a new one.
 
+# It currently assumes an XDG-compliant taskwarrior configuration by default.
+
 import argparse
+import os
 import subprocess
 import sys
 from pathlib import Path
 
 from tasklib import Task, TaskWarrior
 
-TASK_DATA_DIR = "~/.local/share/task"
+# TODO: This should not assume XDG compliance for
+# no-setup TW instances.
+TASK_RC = os.getenv("TASKRC", "~/.config/task/taskrc")
+TASK_DATA_DIR = os.getenv("TASKDATA", "~/.local/share/task")
 
-TOPEN_DIR = "~/.local/share/task/notes"
-TOPEN_EXT = "md"
-TOPEN_ANNOT = "Note"
+TOPEN_DIR = os.getenv("TOPEN_DIR", "~/.local/share/task/notes")
+TOPEN_EXT = os.getenv("TOPEN_EXT", "md")
+TOPEN_ANNOT = os.getenv("TOPEN_ANNOT", "Note")
 
 
 def parse_cli() -> argparse.Namespace:
