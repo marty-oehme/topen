@@ -1,7 +1,7 @@
 [project]
 name = "topen"
 version = "0.1.0"
-description = "Add your description here"
+description = "Quickly edit notes for your taskwarrior tasks"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [

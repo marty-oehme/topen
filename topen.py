@@ -28,7 +28,16 @@ TOPEN_QUIET = os.getenv("TOPEN_QUIET", False)
 
 
 def parse_cli() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Taskwarrior note editing made easy.")
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description="Taskwarrior note editing made easy.",
+        epilog="""Provide a taskwarrior task id or uuid and topen creates a
+new note file for or lets you edit an existing one.
+Additionally it adds a small annotation to the task
+to let you see that there exists a note file next time
+you view the task.
+""",
+    )
     _ = parser.add_argument(
         "id", help="The id/uuid of the taskwarrior task for which we edit notes"
     )
