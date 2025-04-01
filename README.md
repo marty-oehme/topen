@@ -1,4 +1,4 @@
-# Topen - super simple taskwarrior note editing
+# Topen - simple taskwarrior note editing
 
 A script without bells and whistles.
 Focuses on letting you quickly:
@@ -8,12 +8,20 @@ Focuses on letting you quickly:
 
 Does both by simply being invoked with `topen <task-id>`.
 
-Automatically appends a small 'Note' annotation to your task so you know you have notes.
+Automatically appends a small 'Note' annotation to your task so you know you already have notes for it.
 
-Should just work as-is without additional configuration in most taskwarrior setups.
-But can be configured through environment variables or cli options, see below.
+Should just work as-is without additional configuration in most modern taskwarrior setups.[^moderntw]
 
-Can be used as-is or directly from taskwarrior by being aliased:
+[^moderntw]: The script assumes your taskwarrior setup follows the XDG base directory suggestions. That means,
+taskrc in `$XDG_CONFIG_HOME/task/taskrc`, usually `~/.config/task/taskrc`. Furthermore, at the moment it
+assumes the taskwarrior _data_ residing in the `$XDG_DATA_HOME/task` directory. This will diverge from
+many taskwarrior setups still and can be set through the cli option `--task-data`. The idea is for future
+`topen` versions to recognize the task data directory from the taskrc file itself but this has not been
+implemented.
+
+Can be configured through environment variables or cli options, see below.
+
+Can be used as-is with the `topen` command or directly from taskwarrior by being aliased in your `taskrc`:
 
 ```conf
 alias.note=exec topen
