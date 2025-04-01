@@ -10,7 +10,6 @@ Does both by simply being invoked with `topen <task-id>`.
 
 Automatically appends a small 'Note' annotation to your task so you know you have notes.
 
-<!-- TODO: Implement configuration options -->
 Should just work as-is without additional configuration in most taskwarrior setups.
 But can be configured through environment variables or cli options, see below.
 
@@ -25,16 +24,38 @@ by doing `task note <id>`.
 
 That's all there is to it.
 
+## Installation
+
+You can install the script with your favorite python environment manager:
+
+```bash
+uv tool install git+https://git.martyoeh.me/Marty/topen.git
+```
+
+```bash
+pipx install git+https://git.martyoeh.me/Marty/topen.git
+```
+
+```bash
+pip install git+https://git.martyoeh.me/Marty/topen.git
+```
+
+Or just manually copy the `topen` file to a directory in your PATH.
+
+If you just want to try the script out,
+feel free to do so by invoking it e.g. with `uvx git+https://git.martyoeh.me/Marty/topen.git`.
+
 ## Configuration
 
-<!-- TODO: Stub section -->
+```python
+TASK_RC = os.getenv("TASKRC", "~/.config/task/taskrc")
+TASK_DATA_DIR = os.getenv("TASKDATA", "~/.local/share/task")
+TOPEN_DIR = os.getenv("TOPEN_DIR", "~/.local/share/task/notes")
+TOPEN_EXT = os.getenv("TOPEN_EXT", "md")
+TOPEN_ANNOT = os.getenv("TOPEN_ANNOT", "Note")
+TOPEN_EDITOR = os.getenv("EDITOR") or os.getenv("VISUAL", "nano")
+TOPEN_QUIET = os.getenv("TOPEN_QUIET", False)
+```
 
-`TOPEN_DIR`
-
-`TOPEN_EXT`
-
-`TASKRC`
-
-`TASK_DATA`
-
-`TOPEN_ANNOT`
+These are all environment variables taken, needs improved documentation.
+<!-- TODO: IMPROVE DOC -->
