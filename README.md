@@ -48,7 +48,7 @@ feel free to do so by invoking it e.g. with `uvx git+https://git.martyoeh.me/Mar
 ## Configuration
 
 ```python
-TASK_RC = os.getenv("TASKRC", "~/.config/task/taskrc")
+TASK_RC = os.getenv("TASKRC", "~/.config/task/taskrc") # not implemented yet
 TASK_DATA_DIR = os.getenv("TASKDATA", "~/.local/share/task")
 TOPEN_DIR = os.getenv("TOPEN_DIR", "~/.local/share/task/notes")
 TOPEN_EXT = os.getenv("TOPEN_EXT", "md")
@@ -57,5 +57,12 @@ TOPEN_EDITOR = os.getenv("EDITOR") or os.getenv("VISUAL", "nano")
 TOPEN_QUIET = os.getenv("TOPEN_QUIET", False)
 ```
 
-These are all environment variables taken, needs improved documentation.
+These are all environment variables offered, needs improved documentation.
 <!-- TODO: IMPROVE DOC -->
+
+Ultimately the goal would probably be to support reading from a taskwarrior 'taskrc' file,
+which can then be optionally overwritten with env variables,
+which can then be optionally overwritten with cli options.
+
+This is not fully implemented -- we support the above environment variables
+and cli options, that's it.
