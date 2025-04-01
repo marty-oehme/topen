@@ -53,6 +53,8 @@ Or just manually copy the `topen` file to a directory in your PATH.
 If you just want to try the script out,
 feel free to do so by invoking it e.g. with `uvx git+https://git.martyoeh.me/Marty/topen.git`.
 
+Only has [tasklib](https://github.com/GothenburgBitFactory/tasklib) as a dependency.
+
 ## Configuration
 
 ```python
