@@ -30,23 +30,27 @@ DEFAULTS_DICT = {
 
 @dataclass()
 class TConf:
-    task_rc: str
-    task_data: str
+    task_rc: Path
+    task_data: Path
     task_id: int
 
-    notes_dir: str
+    notes_dir: Path
     notes_ext: str
     notes_annot: str
     notes_editor: str
     notes_quiet: bool
 
 
+def _real_path(p: Path | str) -> Path:
+    return Path(os.path.expandvars(p)).expanduser()
+
+
 def conf_from_dict(d: dict) -> TConf:
     return TConf(
-        task_rc=d["task_rc"],
-        task_data=d["task_data"],
+        task_rc=_real_path(d["task_rc"]),
+        task_data=_real_path(d["task_data"]),
         task_id=d["task_id"],
-        notes_dir=d["notes_dir"],
+        notes_dir=_real_path(d["notes_dir"]),
         notes_ext=d["notes_ext"],
         notes_annot=d["notes_annot"],
         notes_editor=d["notes_editor"],
@@ -148,11 +152,10 @@ def whisper(text: str) -> None:
 
 
 def main():
-    # TODO: Don't forget to expand user (path.expanduser) and expand vars (os.path.expandvars)
-    # Should probably be done when 'parsing' option object initially
-    pre_cfg = parse_env() | parse_cli()
-    conf_file = Path(pre_cfg.get("task_rc", DEFAULTS_DICT["task_rc"]))
-    cfg = conf_from_dict(parse_conf(conf_file) | pre_cfg)
+    opts_overwrite = {"task_rc": DEFAULTS_DICT["task_rc"]} | parse_env() | parse_cli()
+    conf_file = _real_path(opts_overwrite["task_rc"])
+    opts: dict = parse_conf(conf_file) | opts_overwrite
+    cfg = conf_from_dict(opts)
 
     if not cfg.task_id:
         _ = sys.stderr.write("Please provide task ID as argument.\n")
@@ -172,9 +175,8 @@ def main():
     add_annotation_if_missing(task, annotation_content=cfg.notes_annot)
 
 
-def get_task(id: str | int, data_location: str) -> Task:
-    # FIXME: This expansion should not be done here
-    tw = TaskWarrior(os.path.expandvars(data_location))
+def get_task(id: str | int, data_location: Path) -> Task:
+    tw = TaskWarrior(data_location)
     try:
         t = tw.tasks.get(id=id)
     except Task.DoesNotExist:
@@ -183,7 +185,7 @@ def get_task(id: str | int, data_location: str) -> Task:
     return t
 
 
-def get_notes_file(uuid: str, notes_dir: str, notes_ext: str) -> Path:
+def get_notes_file(uuid: str, notes_dir: Path, notes_ext: str) -> Path:
     return Path(notes_dir).joinpath(f"{uuid}.{notes_ext}")
 
 
