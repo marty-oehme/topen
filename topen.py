@@ -92,12 +92,16 @@ you view the task.
         help="Annotation content to set within taskwarrior",
     )
     _ = parser.add_argument("--editor", help="Program to open note files with")
-    _ = parser.add_argument("--task-data", help="Location of taskwarrior data")
+    _ = parser.add_argument("--task-rc", help="Location of taskwarrior config file")
+    _ = parser.add_argument(
+        "--task-data", help="Location of taskwarrior data directory"
+    )
 
     p = parser.parse_args()
     return _filtered_dict(
         {
             "task_id": p.id,
+            "task_rc": p.task_rc,
             "task_data": p.task_data,
             "notes_dir": p.notes_dir,
             "notes_ext": p.extension,
