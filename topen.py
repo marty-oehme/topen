@@ -18,13 +18,13 @@ from pathlib import Path
 from tasklib import Task, TaskWarrior
 
 DEFAULTS_DICT = {
-    "task_rc": "~/.config/task/taskrc",
-    "task_data": "~/.local/share/task",
-    "notes_dir": "~/.local/share/task/notes",
-    "notes_ext": "md",
-    "notes_annot": "Note",
-    "notes_editor": os.getenv("EDITOR") or os.getenv("VISUAL") or "nano",
-    "notes_quiet": "False",
+    "task.rc": "~/.config/task/taskrc",
+    "task.data": "~/.local/share/task",
+    "notes.dir": "~/.local/share/task/notes",
+    "notes.ext": "md",
+    "notes.annot": "Note",
+    "notes.editor": os.getenv("EDITOR") or os.getenv("VISUAL") or "nano",
+    "notes.quiet": "False",
 }
 
 
@@ -43,21 +43,21 @@ class TConf:
 
 def conf_from_dict(d: dict) -> TConf:
     return TConf(
-        task_rc=_real_path(d["task_rc"]),
-        task_data=_real_path(d["task_data"]),
-        task_id=d["task_id"],
-        notes_dir=_real_path(d["notes_dir"]),
-        notes_ext=d["notes_ext"],
-        notes_annot=d["notes_annot"],
-        notes_editor=d["notes_editor"],
-        notes_quiet=d["notes_quiet"],
+        task_rc=_real_path(d["task.rc"]),
+        task_data=_real_path(d["task.data"]),
+        task_id=d["task.id"],
+        notes_dir=_real_path(d["notes.dir"]),
+        notes_ext=d["notes.ext"],
+        notes_annot=d["notes.annot"],
+        notes_editor=d["notes.editor"],
+        notes_quiet=d["notes.quiet"],
     )
 
 
 def main():
-    opts_overwrite = {"task_rc": DEFAULTS_DICT["task_rc"]} | parse_env() | parse_cli()
-    conf_file = _real_path(opts_overwrite["task_rc"])
-    opts: dict = parse_conf(conf_file) | opts_overwrite
+    opts_override = {"task.rc": DEFAULTS_DICT["task.rc"]} | parse_env() | parse_cli()
+    conf_file = _real_path(opts_override["task.rc"])
+    opts: dict = parse_conf(conf_file) | opts_override
     cfg = conf_from_dict(opts)
 
     if not cfg.task_id:
@@ -144,14 +144,14 @@ you view the task.
     p = parser.parse_args()
     return _filtered_dict(
         {
-            "task_id": p.id,
-            "task_rc": p.task_rc,
-            "task_data": p.task_data,
-            "notes_dir": p.notes_dir,
-            "notes_ext": p.extension,
-            "notes_annot": p.annotation,
-            "notes_editor": p.editor,
-            "notes_quiet": p.quiet,
+            "task.id": p.id,
+            "task.rc": p.task_rc,
+            "task.data": p.task_data,
+            "notes.dir": p.notes_dir,
+            "notes.ext": p.extension,
+            "notes.annot": p.annotation,
+            "notes.editor": p.editor,
+            "notes.quiet": p.quiet,
         }
     )
 
@@ -161,13 +161,13 @@ def parse_env() -> dict:
     # no-setup TW instances.
     return _filtered_dict(
         {
-            "task_rc": os.getenv("TASKRC"),
-            "task_data": os.getenv("TASKDATA"),
-            "notes_dir": os.getenv("TOPEN_NOTES_DIR"),
-            "notes_ext": os.getenv("TOPEN_NOTES_EXT"),
-            "notes_annot": os.getenv("TOPEN_NOTES_ANNOT"),
-            "notes_editor": os.getenv("TOPEN_NOTES_EDITOR"),
-            "notes_quiet": os.getenv("TOPEN_NOTES_QUIET"),
+            "task.rc": os.getenv("TASKRC"),
+            "task.data": os.getenv("TASKDATA"),
+            "notes.dir": os.getenv("TOPEN_NOTES_DIR"),
+            "notes.ext": os.getenv("TOPEN_NOTES_EXT"),
+            "notes.annot": os.getenv("TOPEN_NOTES_ANNOT"),
+            "notes.editor": os.getenv("TOPEN_NOTES_EDITOR"),
+            "notes.quiet": os.getenv("TOPEN_NOTES_QUIET"),
         }
     )
 
@@ -181,12 +181,12 @@ def parse_conf(conf_file: Path) -> dict:
 
     return _filtered_dict(
         {
-            "notes_dir": c.get("DEFAULT", "notes_dir"),
-            "notes_ext": c.get("DEFAULT", "notes_ext"),
-            "notes_annot": c.get("DEFAULT", "notes_annot"),
-            "notes_editor": c.get("DEFAULT", "notes_editor"),
-            "notes_quiet": c.get("DEFAULT", "notes_quiet"),
-            "task_data": c.get("DEFAULT", "data.location"),
+            "task.data": c.get("DEFAULT", "data.location"),
+            "notes.dir": c.get("DEFAULT", "notes.dir"),
+            "notes.ext": c.get("DEFAULT", "notes.ext"),
+            "notes.annot": c.get("DEFAULT", "notes.annot"),
+            "notes.editor": c.get("DEFAULT", "notes.editor"),
+            "notes.quiet": c.get("DEFAULT", "notes.quiet"),
         }
     )
 
