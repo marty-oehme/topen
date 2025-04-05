@@ -22,7 +22,7 @@ DEFAULTS_DICT = {
     "notes_dir": "~/.local/share/task/notes",
     "notes_ext": "md",
     "notes_annot": "Note",
-    "notes_editor": "nano",
+    "notes_editor": os.getenv("EDITOR") or os.getenv("VISUAL") or "nano",
     "notes_quiet": "False",
 }
 
@@ -56,7 +56,7 @@ def parse_env() -> dict:
             "notes_dir": os.getenv("TOPEN_DIR"),
             "notes_ext": os.getenv("TOPEN_EXT"),
             "notes_annot": os.getenv("TOPEN_ANNOT"),
-            "notes_editor": os.getenv("TOPEN_EDITOR") or os.getenv("EDITOR") or os.getenv("VISUAL"),
+            "notes_editor": os.getenv("TOPEN_EDITOR"),
             "notes_quiet": os.getenv("TOPEN_QUIET"),
         }
     )
