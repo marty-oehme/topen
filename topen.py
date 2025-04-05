@@ -16,18 +16,9 @@ from pathlib import Path
 
 from tasklib import Task, TaskWarrior
 
-# TODO: This should not assume XDG compliance for
-# no-setup TW instances.
-TASK_RC = os.getenv("TASKRC", "~/.config/task/taskrc")
-TASK_DATA_DIR = os.getenv("TASKDATA", "~/.local/share/task")
-
-TOPEN_DIR = os.getenv("TOPEN_DIR")
-TOPEN_EXT = os.getenv("TOPEN_EXT")
-TOPEN_ANNOT = os.getenv("TOPEN_ANNOT")
-TOPEN_EDITOR = os.getenv("EDITOR") or os.getenv("VISUAL")
-TOPEN_QUIET = os.getenv("TOPEN_QUIET")
-
 DEFAULTS_DICT = {
+    "task_rc": "~/.config/task/taskrc",
+    "task_data": "~/.local/share/task",
     "notes_dir": "~/.local/share/task/notes",
     "notes_ext": "md",
     "notes_annot": "Note",
@@ -43,18 +34,32 @@ def parse_conf(conf_file: Path) -> dict:
     with open(conf_file.expanduser()) as f:
         c.read_string("[DEFAULT]\n" + f.read())
 
-    res = {
-        "notes_dir": c.get("DEFAULT", "notes_dir"),
-        "notes_ext": c.get("DEFAULT", "notes_ext"),
-        "notes_annot": c.get("DEFAULT", "notes_annot"),
-        "notes_editor": c.get("DEFAULT", "notes_editor"),
-        "notes_quiet": c.get("DEFAULT", "notes_quiet"),
-        "task_data": c.get("DEFAULT", "data.location"),
-    }
-    return _filtered_dict(res)
+    return _filtered_dict(
+        {
+            "notes_dir": c.get("DEFAULT", "notes_dir"),
+            "notes_ext": c.get("DEFAULT", "notes_ext"),
+            "notes_annot": c.get("DEFAULT", "notes_annot"),
+            "notes_editor": c.get("DEFAULT", "notes_editor"),
+            "notes_quiet": c.get("DEFAULT", "notes_quiet"),
+            "task_data": c.get("DEFAULT", "data.location"),
+        }
+    )
 
 
-def parse_env() -> dict: ...
+def parse_env() -> dict:
+    # TODO: This should not assume XDG compliance for
+    # no-setup TW instances.
+    return _filtered_dict(
+        {
+            "task_rc": os.getenv("TASKRC"),
+            "task_data": os.getenv("TASKDATA"),
+            "notes_dir": os.getenv("TOPEN_DIR"),
+            "notes_ext": os.getenv("TOPEN_EXT"),
+            "notes_annot": os.getenv("TOPEN_ANNOT"),
+            "notes_editor": os.getenv("TOPEN_EDITOR") or os.getenv("EDITOR") or os.getenv("VISUAL"),
+            "notes_quiet": os.getenv("TOPEN_QUIET"),
+        }
+    )
 
 
 def parse_cli() -> dict:
@@ -90,16 +95,17 @@ you view the task.
     _ = parser.add_argument("--task-data", help="Location of taskwarrior data")
 
     p = parser.parse_args()
-    res = {
-        "task_id": p.id,
-        "task_data": p.task_data,
-        "notes_dir": p.notes_dir,
-        "notes_ext": p.extension,
-        "notes_annot": p.annotation,
-        "notes_editor": p.editor,
-        "notes_quiet": p.quiet,
-    }
-    return _filtered_dict(res)
+    return _filtered_dict(
+        {
+            "task_id": p.id,
+            "task_data": p.task_data,
+            "notes_dir": p.notes_dir,
+            "notes_ext": p.extension,
+            "notes_annot": p.annotation,
+            "notes_editor": p.editor,
+            "notes_quiet": p.quiet,
+        }
+    )
 
 
 IS_QUIET = False
@@ -113,7 +119,9 @@ def whisper(text: str) -> None:
 def main():
     # TODO: Don't forget to expand user (path.expanduser) and expand vars (os.path.expandvars)
     # Should probably be done when 'parsing' option object initially
-    cfg = parse_conf(Path(TASK_RC)) | parse_cli()
+    pre_cfg = parse_env() | parse_cli()
+    conf_file = Path(pre_cfg.get("task_rc", DEFAULTS_DICT["task_rc"]))
+    cfg = parse_conf(conf_file) | pre_cfg
 
     if not cfg["task_id"]:
         _ = sys.stderr.write("Please provide task ID as argument.\n")
