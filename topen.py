@@ -100,7 +100,7 @@ def main():
     add_annotation_if_missing(task, annotation_content=args.annotation)
 
 
-def get_task(id: str, data_location: str = TASK_DATA_DIR) -> Task:
+def get_task(id: str, data_location: str) -> Task:
     tw = TaskWarrior(data_location)
     try:
         t = tw.tasks.get(id=id)
@@ -110,21 +110,17 @@ def get_task(id: str, data_location: str = TASK_DATA_DIR) -> Task:
     return t
 
 
-def get_notes_file(
-    uuid: str, notes_dir: str = TOPEN_DIR, notes_ext: str = TOPEN_EXT
-) -> Path:
+def get_notes_file(uuid: str, notes_dir: str, notes_ext: str) -> Path:
     return Path(notes_dir).joinpath(f"{uuid}.{notes_ext}")
 
 
-def open_editor(file: Path, editor: str = TOPEN_EDITOR) -> None:
+def open_editor(file: Path, editor: str) -> None:
     _ = whisper(f"Editing note: {file}")
     proc = subprocess.Popen(f"{editor} {file}", shell=True)
     _ = proc.wait()
 
 
-def add_annotation_if_missing(
-    task: Task, annotation_content: str = TOPEN_ANNOT
-) -> None:
+def add_annotation_if_missing(task: Task, annotation_content: str) -> None:
     for annot in task["annotations"] or []:
         if annot["description"] == annotation_content:
             return
