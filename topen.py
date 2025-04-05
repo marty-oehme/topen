@@ -163,11 +163,11 @@ def parse_env() -> dict:
         {
             "task_rc": os.getenv("TASKRC"),
             "task_data": os.getenv("TASKDATA"),
-            "notes_dir": os.getenv("TOPEN_DIR"),
-            "notes_ext": os.getenv("TOPEN_EXT"),
-            "notes_annot": os.getenv("TOPEN_ANNOT"),
-            "notes_editor": os.getenv("TOPEN_EDITOR"),
-            "notes_quiet": os.getenv("TOPEN_QUIET"),
+            "notes_dir": os.getenv("TOPEN_NOTES_DIR"),
+            "notes_ext": os.getenv("TOPEN_NOTES_EXT"),
+            "notes_annot": os.getenv("TOPEN_NOTES_ANNOT"),
+            "notes_editor": os.getenv("TOPEN_NOTES_EDITOR"),
+            "notes_quiet": os.getenv("TOPEN_NOTES_QUIET"),
         }
     )
 
