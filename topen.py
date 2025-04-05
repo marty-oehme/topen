@@ -12,6 +12,7 @@ import configparser
 import os
 import subprocess
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 
 from tasklib import Task, TaskWarrior
@@ -25,6 +26,32 @@ DEFAULTS_DICT = {
     "notes_editor": os.getenv("EDITOR") or os.getenv("VISUAL") or "nano",
     "notes_quiet": "False",
 }
+
+
+@dataclass()
+class TConf:
+    task_rc: str
+    task_data: str
+    task_id: int
+
+    notes_dir: str
+    notes_ext: str
+    notes_annot: str
+    notes_editor: str
+    notes_quiet: bool
+
+
+def conf_from_dict(d: dict) -> TConf:
+    return TConf(
+        task_rc=d["task_rc"],
+        task_data=d["task_data"],
+        task_id=d["task_id"],
+        notes_dir=d["notes_dir"],
+        notes_ext=d["notes_ext"],
+        notes_annot=d["notes_annot"],
+        notes_editor=d["notes_editor"],
+        notes_quiet=d["notes_quiet"],
+    )
 
 
 def parse_conf(conf_file: Path) -> dict:
@@ -125,27 +152,27 @@ def main():
     # Should probably be done when 'parsing' option object initially
     pre_cfg = parse_env() | parse_cli()
     conf_file = Path(pre_cfg.get("task_rc", DEFAULTS_DICT["task_rc"]))
-    cfg = parse_conf(conf_file) | pre_cfg
+    cfg = conf_from_dict(parse_conf(conf_file) | pre_cfg)
 
-    if not cfg["task_id"]:
+    if not cfg.task_id:
         _ = sys.stderr.write("Please provide task ID as argument.\n")
-    if cfg["notes_quiet"]:
+    if cfg.notes_quiet:
         global IS_QUIET
         IS_QUIET = True
 
-    task = get_task(id=cfg["task_id"], data_location=cfg["task_data"])
+    task = get_task(id=cfg.task_id, data_location=cfg.task_data)
     uuid = task["uuid"]
     if not uuid:
-        _ = sys.stderr.write(f"Could not find task for ID: {cfg['task_id']}.")
+        _ = sys.stderr.write(f"Could not find task for ID: {cfg.task_id}.")
         sys.exit(1)
-    fname = get_notes_file(uuid, notes_dir=cfg["notes_dir"], notes_ext=cfg["notes_ext"])
+    fname = get_notes_file(uuid, notes_dir=cfg.notes_dir, notes_ext=cfg.notes_ext)
 
-    open_editor(fname, editor=cfg["notes_editor"])
+    open_editor(fname, editor=cfg.notes_editor)
 
-    add_annotation_if_missing(task, annotation_content=cfg["notes_annot"])
+    add_annotation_if_missing(task, annotation_content=cfg.notes_annot)
 
 
-def get_task(id: str, data_location: str) -> Task:
+def get_task(id: str | int, data_location: str) -> Task:
     # FIXME: This expansion should not be done here
     tw = TaskWarrior(os.path.expandvars(data_location))
     try:
