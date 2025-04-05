@@ -41,10 +41,6 @@ class TConf:
     notes_quiet: bool
 
 
-def _real_path(p: Path | str) -> Path:
-    return Path(os.path.expandvars(p)).expanduser()
-
-
 def conf_from_dict(d: dict) -> TConf:
     return TConf(
         task_rc=_real_path(d["task_rc"]),
@@ -56,99 +52,6 @@ def conf_from_dict(d: dict) -> TConf:
         notes_editor=d["notes_editor"],
         notes_quiet=d["notes_quiet"],
     )
-
-
-def parse_conf(conf_file: Path) -> dict:
-    c = configparser.ConfigParser(
-        defaults=DEFAULTS_DICT, allow_unnamed_section=True, allow_no_value=True
-    )
-    with open(conf_file.expanduser()) as f:
-        c.read_string("[DEFAULT]\n" + f.read())
-
-    return _filtered_dict(
-        {
-            "notes_dir": c.get("DEFAULT", "notes_dir"),
-            "notes_ext": c.get("DEFAULT", "notes_ext"),
-            "notes_annot": c.get("DEFAULT", "notes_annot"),
-            "notes_editor": c.get("DEFAULT", "notes_editor"),
-            "notes_quiet": c.get("DEFAULT", "notes_quiet"),
-            "task_data": c.get("DEFAULT", "data.location"),
-        }
-    )
-
-
-def parse_env() -> dict:
-    # TODO: This should not assume XDG compliance for
-    # no-setup TW instances.
-    return _filtered_dict(
-        {
-            "task_rc": os.getenv("TASKRC"),
-            "task_data": os.getenv("TASKDATA"),
-            "notes_dir": os.getenv("TOPEN_DIR"),
-            "notes_ext": os.getenv("TOPEN_EXT"),
-            "notes_annot": os.getenv("TOPEN_ANNOT"),
-            "notes_editor": os.getenv("TOPEN_EDITOR"),
-            "notes_quiet": os.getenv("TOPEN_QUIET"),
-        }
-    )
-
-
-def parse_cli() -> dict:
-    parser = argparse.ArgumentParser(
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        description="Taskwarrior note editing made easy.",
-        epilog="""Provide a taskwarrior task id or uuid and topen creates a
-new note file for or lets you edit an existing one.
-Additionally it adds a small annotation to the task
-to let you see that there exists a note file next time
-you view the task.
-""",
-    )
-    _ = parser.add_argument(
-        "id", help="The id/uuid of the taskwarrior task for which we edit notes"
-    )
-    _ = parser.add_argument(
-        "-d",
-        "--notes-dir",
-        help="Location of topen notes files",
-    )
-    _ = parser.add_argument(
-        "--quiet",
-        action="store_true",
-        help="Silence any verbose displayed information",
-    )
-    _ = parser.add_argument("--extension", help="Extension of note files")
-    _ = parser.add_argument(
-        "--annotation",
-        help="Annotation content to set within taskwarrior",
-    )
-    _ = parser.add_argument("--editor", help="Program to open note files with")
-    _ = parser.add_argument("--task-rc", help="Location of taskwarrior config file")
-    _ = parser.add_argument(
-        "--task-data", help="Location of taskwarrior data directory"
-    )
-
-    p = parser.parse_args()
-    return _filtered_dict(
-        {
-            "task_id": p.id,
-            "task_rc": p.task_rc,
-            "task_data": p.task_data,
-            "notes_dir": p.notes_dir,
-            "notes_ext": p.extension,
-            "notes_annot": p.annotation,
-            "notes_editor": p.editor,
-            "notes_quiet": p.quiet,
-        }
-    )
-
-
-IS_QUIET = False
-
-
-def whisper(text: str) -> None:
-    if not IS_QUIET:
-        print(text)
 
 
 def main():
@@ -201,6 +104,103 @@ def add_annotation_if_missing(task: Task, annotation_content: str) -> None:
             return
     task.add_annotation(annotation_content)
     _ = whisper(f"Added annotation: {annotation_content}")
+
+
+def parse_cli() -> dict:
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description="Taskwarrior note editing made easy.",
+        epilog="""Provide a taskwarrior task id or uuid and topen creates a
+new note file for or lets you edit an existing one.
+Additionally it adds a small annotation to the task
+to let you see that there exists a note file next time
+you view the task.
+""",
+    )
+    _ = parser.add_argument(
+        "id", help="The id/uuid of the taskwarrior task for which we edit notes"
+    )
+    _ = parser.add_argument(
+        "-d",
+        "--notes-dir",
+        help="Location of topen notes files",
+    )
+    _ = parser.add_argument(
+        "--quiet",
+        action="store_true",
+        help="Silence any verbose displayed information",
+    )
+    _ = parser.add_argument("--extension", help="Extension of note files")
+    _ = parser.add_argument(
+        "--annotation",
+        help="Annotation content to set within taskwarrior",
+    )
+    _ = parser.add_argument("--editor", help="Program to open note files with")
+    _ = parser.add_argument("--task-rc", help="Location of taskwarrior config file")
+    _ = parser.add_argument(
+        "--task-data", help="Location of taskwarrior data directory"
+    )
+
+    p = parser.parse_args()
+    return _filtered_dict(
+        {
+            "task_id": p.id,
+            "task_rc": p.task_rc,
+            "task_data": p.task_data,
+            "notes_dir": p.notes_dir,
+            "notes_ext": p.extension,
+            "notes_annot": p.annotation,
+            "notes_editor": p.editor,
+            "notes_quiet": p.quiet,
+        }
+    )
+
+
+def parse_env() -> dict:
+    # TODO: This should not assume XDG compliance for
+    # no-setup TW instances.
+    return _filtered_dict(
+        {
+            "task_rc": os.getenv("TASKRC"),
+            "task_data": os.getenv("TASKDATA"),
+            "notes_dir": os.getenv("TOPEN_DIR"),
+            "notes_ext": os.getenv("TOPEN_EXT"),
+            "notes_annot": os.getenv("TOPEN_ANNOT"),
+            "notes_editor": os.getenv("TOPEN_EDITOR"),
+            "notes_quiet": os.getenv("TOPEN_QUIET"),
+        }
+    )
+
+
+def parse_conf(conf_file: Path) -> dict:
+    c = configparser.ConfigParser(
+        defaults=DEFAULTS_DICT, allow_unnamed_section=True, allow_no_value=True
+    )
+    with open(conf_file.expanduser()) as f:
+        c.read_string("[DEFAULT]\n" + f.read())
+
+    return _filtered_dict(
+        {
+            "notes_dir": c.get("DEFAULT", "notes_dir"),
+            "notes_ext": c.get("DEFAULT", "notes_ext"),
+            "notes_annot": c.get("DEFAULT", "notes_annot"),
+            "notes_editor": c.get("DEFAULT", "notes_editor"),
+            "notes_quiet": c.get("DEFAULT", "notes_quiet"),
+            "task_data": c.get("DEFAULT", "data.location"),
+        }
+    )
+
+
+IS_QUIET = False
+
+
+def whisper(text: str) -> None:
+    if not IS_QUIET:
+        print(text)
+
+
+def _real_path(p: Path | str) -> Path:
+    return Path(os.path.expandvars(p)).expanduser()
 
 
 # A None-filtered dict which only contains
