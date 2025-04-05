@@ -8,6 +8,7 @@
 # It currently assumes an XDG-compliant taskwarrior configuration by default.
 
 import argparse
+import configparser
 import os
 import subprocess
 import sys
@@ -20,14 +21,43 @@ from tasklib import Task, TaskWarrior
 TASK_RC = os.getenv("TASKRC", "~/.config/task/taskrc")
 TASK_DATA_DIR = os.getenv("TASKDATA", "~/.local/share/task")
 
-TOPEN_DIR = os.getenv("TOPEN_DIR", "~/.local/share/task/notes")
-TOPEN_EXT = os.getenv("TOPEN_EXT", "md")
-TOPEN_ANNOT = os.getenv("TOPEN_ANNOT", "Note")
-TOPEN_EDITOR = os.getenv("EDITOR") or os.getenv("VISUAL", "nano")
-TOPEN_QUIET = os.getenv("TOPEN_QUIET", False)
+TOPEN_DIR = os.getenv("TOPEN_DIR")
+TOPEN_EXT = os.getenv("TOPEN_EXT")
+TOPEN_ANNOT = os.getenv("TOPEN_ANNOT")
+TOPEN_EDITOR = os.getenv("EDITOR") or os.getenv("VISUAL")
+TOPEN_QUIET = os.getenv("TOPEN_QUIET")
+
+DEFAULTS_DICT = {
+    "notes_dir": "~/.local/share/task/notes",
+    "notes_ext": "md",
+    "notes_annot": "Note",
+    "notes_editor": "nano",
+    "notes_quiet": "False",
+}
 
 
-def parse_cli() -> argparse.Namespace:
+def parse_conf(conf_file: Path) -> dict:
+    c = configparser.ConfigParser(
+        defaults=DEFAULTS_DICT, allow_unnamed_section=True, allow_no_value=True
+    )
+    with open(conf_file.expanduser()) as f:
+        c.read_string("[DEFAULT]\n" + f.read())
+
+    res = {
+        "notes_dir": c.get("DEFAULT", "notes_dir"),
+        "notes_ext": c.get("DEFAULT", "notes_ext"),
+        "notes_annot": c.get("DEFAULT", "notes_annot"),
+        "notes_editor": c.get("DEFAULT", "notes_editor"),
+        "notes_quiet": c.get("DEFAULT", "notes_quiet"),
+        "task_data": c.get("DEFAULT", "data.location"),
+    }
+    return _filtered_dict(res)
+
+
+def parse_env() -> dict: ...
+
+
+def parse_cli() -> dict:
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description="Taskwarrior note editing made easy.",
@@ -44,31 +74,32 @@ you view the task.
     _ = parser.add_argument(
         "-d",
         "--notes-dir",
-        default=TOPEN_DIR,
         help="Location of topen notes files",
     )
     _ = parser.add_argument(
         "--quiet",
-        default=TOPEN_QUIET,
         action="store_true",
         help="Silence any verbose displayed information",
     )
-    _ = parser.add_argument(
-        "--extension", default=TOPEN_EXT, help="Extension of note files"
-    )
+    _ = parser.add_argument("--extension", help="Extension of note files")
     _ = parser.add_argument(
         "--annotation",
-        default=TOPEN_ANNOT,
         help="Annotation content to set within taskwarrior",
     )
-    _ = parser.add_argument(
-        "--task-data", default=TASK_DATA_DIR, help="Location of taskwarrior data"
-    )
-    _ = parser.add_argument(
-        "--editor", default=TOPEN_EDITOR, help="Program to open note files with"
-    )
+    _ = parser.add_argument("--editor", help="Program to open note files with")
+    _ = parser.add_argument("--task-data", help="Location of taskwarrior data")
 
-    return parser.parse_args()
+    p = parser.parse_args()
+    res = {
+        "task_id": p.id,
+        "task_data": p.task_data,
+        "notes_dir": p.notes_dir,
+        "notes_ext": p.extension,
+        "notes_annot": p.annotation,
+        "notes_editor": p.editor,
+        "notes_quiet": p.quiet,
+    }
+    return _filtered_dict(res)
 
 
 IS_QUIET = False
@@ -80,28 +111,31 @@ def whisper(text: str) -> None:
 
 
 def main():
-    args = parse_cli()
+    # TODO: Don't forget to expand user (path.expanduser) and expand vars (os.path.expandvars)
+    # Should probably be done when 'parsing' option object initially
+    cfg = parse_conf(Path(TASK_RC)) | parse_cli()
 
-    if not args.id:
+    if not cfg["task_id"]:
         _ = sys.stderr.write("Please provide task ID as argument.\n")
-    if args.quiet:
+    if cfg["notes_quiet"]:
         global IS_QUIET
         IS_QUIET = True
 
-    task = get_task(id=args.id, data_location=args.task_data)
+    task = get_task(id=cfg["task_id"], data_location=cfg["task_data"])
     uuid = task["uuid"]
     if not uuid:
-        _ = sys.stderr.write(f"Could not find task for ID: {args.id}.")
+        _ = sys.stderr.write(f"Could not find task for ID: {cfg['task_id']}.")
         sys.exit(1)
-    fname = get_notes_file(uuid, notes_dir=args.notes_dir, notes_ext=args.extension)
+    fname = get_notes_file(uuid, notes_dir=cfg["notes_dir"], notes_ext=cfg["notes_ext"])
 
-    open_editor(fname, editor=args.editor)
+    open_editor(fname, editor=cfg["notes_editor"])
 
-    add_annotation_if_missing(task, annotation_content=args.annotation)
+    add_annotation_if_missing(task, annotation_content=cfg["notes_annot"])
 
 
 def get_task(id: str, data_location: str) -> Task:
-    tw = TaskWarrior(data_location)
+    # FIXME: This expansion should not be done here
+    tw = TaskWarrior(os.path.expandvars(data_location))
     try:
         t = tw.tasks.get(id=id)
     except Task.DoesNotExist:
@@ -126,6 +160,12 @@ def add_annotation_if_missing(task: Task, annotation_content: str) -> None:
             return
     task.add_annotation(annotation_content)
     _ = whisper(f"Added annotation: {annotation_content}")
+
+
+# A None-filtered dict which only contains
+# keys which have a value.
+def _filtered_dict(d: dict) -> dict:
+    return {k: v for (k, v) in d.items() if v}
 
 
 if __name__ == "__main__":
