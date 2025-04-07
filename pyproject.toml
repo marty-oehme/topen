@@ -16,3 +16,8 @@ topen = "topen:main"
 
 [tool.pyright]
 typeCheckingMode = "standard"
+
+[dependency-groups]
+dev = [
+    "pdoc>=15.0.1",
+]
