@@ -6,9 +6,11 @@ Focuses on letting you quickly:
 - create notes for taskwarrior tasks
 - edit notes for taskwarrior tasks
 
-Does both by simply being invoked with `topen <task-id>`.
+It does both by simply being invoked with `topen <task-id>`.
 
-Automatically appends a small 'Note' annotation to your task so you know you already have notes for it.
+Provide a taskwarrior task id or uuid and topen creates a new note file or lets
+you edit an existing one. Additionally it adds a small annotation to the task
+to let you see that there exists a note file next time you view the task.
 
 Should just work as-is without additional configuration in most modern taskwarrior setups.[^moderntw]
 

@@ -1,11 +1,20 @@
 #!/usr/bin/env python
-# Open or create a note file
-# for a taskwarrior task.
-# Takes a taskwarrior ID or UUID for a single task.
-# Edits an existing task note file,
-# or creates a new one.
+"""
+.. include:: ./README.md
 
-# It currently assumes an XDG-compliant taskwarrior configuration by default.
+# Usage as library
+
+While normal operation is intended through the commandline to open or create
+note files for taskwarrior tasks, the topen.py file can be used as a library to
+open and edit taskwarrior notes programmatically.
+
+You can make use of the open editor and utility functions to find and edit
+notes, either filling in the required configuration manually or passing around
+a TConf configuration object containing them all. If choosing the latter, you can
+read the configuration in part from a `taskrc` file using the utility function
+`parse_conf()`.
+
+"""
 
 import argparse
 import configparser
@@ -28,33 +37,19 @@ DEFAULTS_DICT = {
 }
 
 
-@dataclass()
-class TConf:
-    task_rc: Path
-    task_data: Path
-    task_id: int
-
-    notes_dir: Path
-    notes_ext: str
-    notes_annot: str
-    notes_editor: str
-    notes_quiet: bool
-
-
-def conf_from_dict(d: dict) -> TConf:
-    return TConf(
-        task_rc=_real_path(d["task.rc"]),
-        task_data=_real_path(d["task.data"]),
-        task_id=d["task.id"],
-        notes_dir=_real_path(d["notes.dir"]),
-        notes_ext=d["notes.ext"],
-        notes_annot=d["notes.annot"],
-        notes_editor=d["notes.editor"],
-        notes_quiet=d["notes.quiet"],
-    )
-
-
 def main():
+    """Runs the cli interface.
+
+    First sets up the correct options, with overrides in the following order:
+    `defaults -> taskrc -> env vars -> cli opts`
+    with cli options having the highest priority.
+
+    Then uses those options to get the task corresponding to the task id passed
+    in as an argument, finds the matching notes file path and opens an editor
+    pointing to the file.
+
+    If the task does not yet have a note annotation it also adds it automatically.
+    """
     opts_override = {"task.rc": DEFAULTS_DICT["task.rc"]} | parse_env() | parse_cli()
     conf_file = _real_path(opts_override["task.rc"])
     opts: dict = parse_conf(conf_file) | opts_override
@@ -79,6 +74,10 @@ def main():
 
 
 def get_task(id: str | int, data_location: Path) -> Task:
+    """Finds a taskwarrior task from an id.
+
+    `id` can be either a taskwarrior id or uuid.
+    """
     tw = TaskWarrior(data_location)
     try:
         t = tw.tasks.get(id=id)
@@ -89,16 +88,24 @@ def get_task(id: str | int, data_location: Path) -> Task:
 
 
 def get_notes_file(uuid: str, notes_dir: Path, notes_ext: str) -> Path:
+    """Finds the notes file corresponding to a taskwarrior task."""
     return Path(notes_dir).joinpath(f"{uuid}.{notes_ext}")
 
 
 def open_editor(file: Path, editor: str) -> None:
+    """Opens a file with the chosen editor."""
     _ = whisper(f"Editing note: {file}")
     proc = subprocess.Popen(f"{editor} {file}", shell=True)
     _ = proc.wait()
 
 
 def add_annotation_if_missing(task: Task, annotation_content: str) -> None:
+    """Conditionally adds an annotation to a task.
+
+    Only adds the annotation if the task does not yet have an
+    annotation with exactly that content (i.e. avoids
+    duplication).
+    """
     for annot in task["annotations"] or []:
         if annot["description"] == annotation_content:
             return
@@ -106,7 +113,55 @@ def add_annotation_if_missing(task: Task, annotation_content: str) -> None:
     _ = whisper(f"Added annotation: {annotation_content}")
 
 
+@dataclass()
+class TConf:
+    """Topen Configuration
+
+    Contains all the configuration options that can affect Topen note creation.
+    """
+
+    task_rc: Path
+    """The path to the taskwarrior taskrc file."""
+    task_data: Path
+    """The path to the taskwarrior data directory."""
+    task_id: int
+    """The id (or uuid) of the task to edit a note for."""
+
+    notes_dir: Path
+    """The path to the notes directory."""
+    notes_ext: str
+    """The extension of note files."""
+    notes_annot: str
+    """The annotation to add to taskwarrior tasks with notes."""
+    notes_editor: str
+    """The editor to open note files with."""
+    notes_quiet: bool
+    """If set topen will give no feedback on note editing."""
+
+
+def conf_from_dict(d: dict) -> TConf:
+    """Generate a TConf class from a dictionary.
+
+    Turns a dictionary containing all the necessary entries into a TConf configuration file.
+    Will error if one any of the entries are missing.
+    """
+    return TConf(
+        task_rc=_real_path(d["task.rc"]),
+        task_data=_real_path(d["task.data"]),
+        task_id=d["task.id"],
+        notes_dir=_real_path(d["notes.dir"]),
+        notes_ext=d["notes.ext"],
+        notes_annot=d["notes.annot"],
+        notes_editor=d["notes.editor"],
+        notes_quiet=d["notes.quiet"],
+    )
+
+
 def parse_cli() -> dict:
+    """Parse cli options and arguments.
+
+    Returns them as a simple dict object.
+    """
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description="Taskwarrior note editing made easy.",
@@ -157,8 +212,10 @@ you view the task.
 
 
 def parse_env() -> dict:
-    # TODO: This should not assume XDG compliance for
-    # no-setup TW instances.
+    """Parse environment variable options.
+
+    Returns them as a simple dict object.
+    """
     return _filtered_dict(
         {
             "task.rc": os.getenv("TASKRC"),
@@ -173,6 +230,11 @@ def parse_env() -> dict:
 
 
 def parse_conf(conf_file: Path) -> dict:
+    """Parse taskrc configuration file options.
+
+    Returns them as a simple dict object.
+    Uses dot.annotation for options just like taskwarrior settings.
+    """
     c = configparser.ConfigParser(
         defaults=DEFAULTS_DICT, allow_unnamed_section=True, allow_no_value=True
     )
