@@ -28,8 +28,8 @@ from tasklib import Task, TaskWarrior
 
 DEFAULTS_DICT = {
     "task.rc": "~/.config/task/taskrc",
-    "task.data": "~/.local/share/task",
-    "notes.dir": "~/.local/share/task/notes",
+    "task.data": "~/.task",
+    "notes.dir": "~/.task/notes",
     "notes.ext": "md",
     "notes.annot": "Note",
     "notes.editor": os.getenv("EDITOR") or os.getenv("VISUAL") or "nano",
