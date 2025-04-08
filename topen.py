@@ -21,6 +21,7 @@ import configparser
 import os
 import subprocess
 import sys
+from collections import namedtuple
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Self, cast
@@ -241,19 +242,21 @@ def parse_conf(conf_file: Path) -> dict:
     with open(conf_file.expanduser()) as f:
         c.read_string("[GENERAL]\n" + f.read())
 
-    res = {}
-    for option in [
-        # tuples with: (conf option name, TConf member name)
-        ("data.location", "task_data"),
-        ("notes.dir", "notes_dir"),
-        ("notes.ext", "notes_ext"),
-        ("notes.annot", "notes_annot"),
-        ("notes.editor", "notes_editor"),
-        ("notes.quiet", "notes_quiet"),
-    ]:
-        if c.has_option("GENERAL", option[0]):
-            res[option[1]] = c.get("GENERAL", option[0])
-    return _filtered_dict(res)
+    ConfTrans = namedtuple("ParsedToTConf", ["name", "tconf_name"])
+    return _filtered_dict(
+        {
+            opt.tconf_name: c.get("GENERAL", opt.name)
+            for opt in [
+                ConfTrans("data.location", "task_data"),
+                ConfTrans("notes.dir", "notes_dir"),
+                ConfTrans("notes.ext", "notes_ext"),
+                ConfTrans("notes.annot", "notes_annot"),
+                ConfTrans("notes.editor", "notes_editor"),
+                ConfTrans("notes.quiet", "notes_quiet"),
+            ]
+            if c.has_option("GENERAL", opt.name)
+        }
+    )
 
 
 IS_QUIET = False
