@@ -15,7 +15,7 @@ Provide a taskwarrior task id or uuid and `topen` creates a new note file or let
 you edit an existing one. Additionally it adds a small annotation to the task
 to let you see that there exists a note file next time you view the task.
 
-Should just work as-is without additional configuration in most modern taskwarrior setups.[^moderntw]
+Should just work as-is without additional configuration in most modern taskwarrior setups.
 
 Can be configured through environment variables or cli options, see below.
 
