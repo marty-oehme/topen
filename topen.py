@@ -58,8 +58,11 @@ def main():
     if not uuid:
         _ = sys.stderr.write(f"Could not find task for ID: {cfg.task_id}.")
         sys.exit(1)
+
     fpath = get_notes_file(uuid, notes_dir=cfg.notes_dir, notes_ext=cfg.notes_ext)
 
+    if not fpath.parent.exists():
+        fpath.parent.mkdir(parents=True, exist_ok=True)
     open_editor(fpath, editor=cfg.notes_editor)
 
     if fpath.exists():
