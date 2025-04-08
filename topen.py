@@ -26,16 +26,6 @@ from pathlib import Path
 
 from tasklib import Task, TaskWarrior
 
-DEFAULTS_DICT = {
-    "task.rc": "~/.config/task/taskrc",
-    "task.data": "~/.task",
-    "notes.dir": "~/.task/notes",
-    "notes.ext": "md",
-    "notes.annot": "Note",
-    "notes.editor": os.getenv("EDITOR") or os.getenv("VISUAL") or "nano",
-    "notes.quiet": "False",
-}
-
 
 def main():
     """Runs the cli interface.
@@ -50,8 +40,8 @@ def main():
 
     If the task does not yet have a note annotation it also adds it automatically.
     """
-    opts_override = {"task.rc": DEFAULTS_DICT["task.rc"]} | parse_env() | parse_cli()
-    conf_file = _real_path(opts_override["task.rc"])
+    opts_override = {"task_rc": TConf(0).task_rc} | parse_env() | parse_cli()
+    conf_file = _real_path(opts_override["task_rc"])
     opts: dict = parse_conf(conf_file) | opts_override
     cfg = conf_from_dict(opts)
 
@@ -120,23 +110,28 @@ class TConf:
     Contains all the configuration options that can affect Topen note creation.
     """
 
-    task_rc: Path
-    """The path to the taskwarrior taskrc file."""
-    task_data: Path
-    """The path to the taskwarrior data directory."""
     task_id: int
     """The id (or uuid) of the task to edit a note for."""
+    task_rc: Path = Path("~/.config/task/taskrc")
+    """The path to the taskwarrior taskrc file."""
+    task_data: Path = Path("~/.task")
+    """The path to the taskwarrior data directory."""
 
-    notes_dir: Path
+    notes_dir: Path = Path("~/.task/notes")
     """The path to the notes directory."""
-    notes_ext: str
+    notes_ext: str = "md"
     """The extension of note files."""
-    notes_annot: str
+    notes_annot: str = "Note"
     """The annotation to add to taskwarrior tasks with notes."""
-    notes_editor: str
+    notes_editor: str = os.getenv("EDITOR") or os.getenv("VISUAL") or "nano"
     """The editor to open note files with."""
-    notes_quiet: bool
+    notes_quiet: bool = False
     """If set topen will give no feedback on note editing."""
+
+    def __post_init__(self):
+        self.task_rc = _real_path(self.task_rc)
+        self.task_data = _real_path(self.task_data)
+        self.notes_dir = _real_path(self.notes_dir)
 
 
 def conf_from_dict(d: dict) -> TConf:
@@ -145,16 +140,7 @@ def conf_from_dict(d: dict) -> TConf:
     Turns a dictionary containing all the necessary entries into a TConf configuration file.
     Will error if one any of the entries are missing.
     """
-    return TConf(
-        task_rc=_real_path(d["task.rc"]),
-        task_data=_real_path(d["task.data"]),
-        task_id=d["task.id"],
-        notes_dir=_real_path(d["notes.dir"]),
-        notes_ext=d["notes.ext"],
-        notes_annot=d["notes.annot"],
-        notes_editor=d["notes.editor"],
-        notes_quiet=d["notes.quiet"],
-    )
+    return TConf(**d)
 
 
 def parse_cli() -> dict:
@@ -199,14 +185,14 @@ you view the task.
     p = parser.parse_args()
     return _filtered_dict(
         {
-            "task.id": p.id,
-            "task.rc": p.task_rc,
-            "task.data": p.task_data,
-            "notes.dir": p.notes_dir,
-            "notes.ext": p.extension,
-            "notes.annot": p.annotation,
-            "notes.editor": p.editor,
-            "notes.quiet": p.quiet,
+            "task_id": p.id,
+            "task_rc": p.task_rc,
+            "task_data": p.task_data,
+            "notes_dir": p.notes_dir,
+            "notes_ext": p.extension,
+            "notes_annot": p.annotation,
+            "notes_editor": p.editor,
+            "notes_quiet": p.quiet,
         }
     )
 
@@ -218,13 +204,13 @@ def parse_env() -> dict:
     """
     return _filtered_dict(
         {
-            "task.rc": os.getenv("TASKRC"),
-            "task.data": os.getenv("TASKDATA"),
-            "notes.dir": os.getenv("TOPEN_NOTES_DIR"),
-            "notes.ext": os.getenv("TOPEN_NOTES_EXT"),
-            "notes.annot": os.getenv("TOPEN_NOTES_ANNOT"),
-            "notes.editor": os.getenv("TOPEN_NOTES_EDITOR"),
-            "notes.quiet": os.getenv("TOPEN_NOTES_QUIET"),
+            "task_rc": os.getenv("TASKRC"),
+            "task_data": os.getenv("TASKDATA"),
+            "notes_dir": os.getenv("TOPEN_NOTES_DIR"),
+            "notes_ext": os.getenv("TOPEN_NOTES_EXT"),
+            "notes_annot": os.getenv("TOPEN_NOTES_ANNOT"),
+            "notes_editor": os.getenv("TOPEN_NOTES_EDITOR"),
+            "notes_quiet": os.getenv("TOPEN_NOTES_QUIET"),
         }
     )
 
@@ -235,22 +221,23 @@ def parse_conf(conf_file: Path) -> dict:
     Returns them as a simple dict object.
     Uses dot.annotation for options just like taskwarrior settings.
     """
-    c = configparser.ConfigParser(
-        defaults=DEFAULTS_DICT, allow_unnamed_section=True, allow_no_value=True
-    )
+    c = configparser.ConfigParser(allow_unnamed_section=True, allow_no_value=True)
     with open(conf_file.expanduser()) as f:
-        c.read_string("[DEFAULT]\n" + f.read())
+        c.read_string("[GENERAL]\n" + f.read())
 
-    return _filtered_dict(
-        {
-            "task.data": c.get("DEFAULT", "data.location"),
-            "notes.dir": c.get("DEFAULT", "notes.dir"),
-            "notes.ext": c.get("DEFAULT", "notes.ext"),
-            "notes.annot": c.get("DEFAULT", "notes.annot"),
-            "notes.editor": c.get("DEFAULT", "notes.editor"),
-            "notes.quiet": c.get("DEFAULT", "notes.quiet"),
-        }
-    )
+    res = {}
+    for option in [
+        # tuples with: (conf option name, TConf member name)
+        ("data.location", "task_data"),
+        ("notes.dir", "notes_dir"),
+        ("notes.ext", "notes_ext"),
+        ("notes.annot", "notes_annot"),
+        ("notes.editor", "notes_editor"),
+        ("notes.quiet", "notes_quiet"),
+    ]:
+        if c.has_option("GENERAL", option[0]):
+            res[option[1]] = c.get("GENERAL", option[0])
+    return _filtered_dict(res)
 
 
 IS_QUIET = False
