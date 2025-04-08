@@ -1,4 +1,7 @@
-# Topen - simple taskwarrior note editing
+# Simple taskwarrior note management
+
+[Docs](https://marty-oehme.github.io/topen)
+[Pypi](https://pypi.org/project/topen)
 
 A script without bells and whistles.
 Focuses on letting you quickly:
@@ -8,7 +11,7 @@ Focuses on letting you quickly:
 
 It does both by simply being invoked with `topen <task-id>`.
 
-Provide a taskwarrior task id or uuid and topen creates a new note file or lets
+Provide a taskwarrior task id or uuid and `topen` creates a new note file or lets
 you edit an existing one. Additionally it adds a small annotation to the task
 to let you see that there exists a note file next time you view the task.
 
@@ -32,36 +35,45 @@ That's all there is to it.
 You can install the script with your favorite python environment manager:
 
 ```bash
-uv tool install git+https://git.martyoeh.me/Marty/topen.git
+uv tool install topen
 ```
 
 ```bash
-pipx install git+https://git.martyoeh.me/Marty/topen.git
+pipx install topen
 ```
 
 ```bash
-pip install git+https://git.martyoeh.me/Marty/topen.git
+pip install topen
 ```
 
 Or just manually copy the `topen` file to a directory in your PATH.
+[tasklib](https://github.com/GothenburgBitFactory/tasklib) is the only dependency aside from the python standard library.
 
 If you just want to try the script out,
 feel free to do so by invoking it e.g. with `uvx git+https://git.martyoeh.me/Marty/topen.git`.
 
-Only has [tasklib](https://github.com/GothenburgBitFactory/tasklib) as a dependency.
+If you want to install the trunk version instead of a versioned release simply substitute for the git path:
+
+```bash
+uv tool install git+https://git.martyoeh.me/Marty/topen.git
+```
 
 ## Configuration
 
-By default the script generally assumes your taskwarrior setup follows the XDG
-base directory suggestions.
+Most taskwarrior setups should not need much further configuration and just work out of the box.
+However, if you want to diverge from the defaults explained here,
+use the below settings to configure everything to your preferences.
 
-That means, taskrc in `$XDG_CONFIG_HOME/task/taskrc`, usually
-`~/.config/task/taskrc`. Furthermore, at the moment it assumes the taskwarrior
-_data_ residing in the `$XDG_DATA_HOME/task` directory. This may diverge from
-taskwarrior setups still.
+It looks for a taskrc file in the user's home directory (`~/.taskrc`) or the XDG base config directory (usually `~/.config/task/taskrc`).
+The data directory also follows the taskwarrior defaults (`~/.task`) or is read from the taskrc `data.location` option.
+
+The notes directory defaults to be in the `notes` subdirectory of where-ever your taskwarrior data location is,
+but can be set to anywhere else independently as well.
 
 This program can be configured in 3 different ways: options set in your regular taskwarrior `taskrc` file,
 environment variables or options given on the command line.
+
+CLI options override environment variables, which in turn override configuration set in the `taskrc` file.
 
 ### Taskrc configuration
 
@@ -79,11 +91,6 @@ notes.annot # set the annotation added to tasks with notes
 notes.editor # set the editor used to open notes
 notes.quiet # set topen to hide all verbose information during use
 ```
-
-<!-- TODO: IMPROVE DOC -->
-Ultimately the goal would probably be to support reading from a taskwarrior 'taskrc' file,
-which can then be optionally overwritten with env variables,
-which can then be optionally overwritten with cli options.
 
 ### Environment variables
 
