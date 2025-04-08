@@ -57,11 +57,12 @@ def main():
     if not uuid:
         _ = sys.stderr.write(f"Could not find task for ID: {cfg.task_id}.")
         sys.exit(1)
-    fname = get_notes_file(uuid, notes_dir=cfg.notes_dir, notes_ext=cfg.notes_ext)
+    fpath = get_notes_file(uuid, notes_dir=cfg.notes_dir, notes_ext=cfg.notes_ext)
 
-    open_editor(fname, editor=cfg.notes_editor)
+    open_editor(fpath, editor=cfg.notes_editor)
 
-    add_annotation_if_missing(task, annotation_content=cfg.notes_annot)
+    if fpath.exists():
+        add_annotation_if_missing(task, annotation_content=cfg.notes_annot)
 
 
 def get_task(id: str | int, data_location: Path) -> Task:
