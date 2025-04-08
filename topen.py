@@ -118,10 +118,29 @@ class TConf:
 
     task_id: int
     """The id (or uuid) of the task to edit a note for."""
-    task_rc: Path = Path("~/.config/task/taskrc")
-    """The path to the taskwarrior taskrc file."""
+    task_rc: Path
+    _task_rc: Path | None = field(init=False, repr=False, default=None)
+    """The path to the taskwarrior taskrc file. Can be absolute or relative to cwd."""
+
+    @property
+    def task_rc(self) -> Path:
+        if self._task_rc:
+            return self._task_rc
+        elif _real_path("~/.taskrc").exists():
+            return _real_path("~/.taskrc")
+        elif _real_path("$XDG_CONFIG_HOME/task/taskrc").exists():
+            return _real_path("$XDG_CONFIG_HOME/task/taskrc")
+        else:
+            return _real_path("~/.config/task/taskrc")
+
+    @task_rc.setter
+    def task_rc(self, value: Path | property | None):
+        if type(value) is property:
+            value = TConf._notes_dir
+        self._task_rc = cast(Path, value)
+
     task_data: Path = Path("~/.task")
-    """The path to the taskwarrior data directory."""
+    """The path to the taskwarrior data directory. Can be absolute or relative to cwd."""
 
     notes_dir: Path
     """The path to the notes directory."""
