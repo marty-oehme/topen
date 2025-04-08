@@ -21,9 +21,9 @@ import configparser
 import os
 import subprocess
 import sys
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Self
+from typing import Any, Self, cast
 
 from tasklib import Task, TaskWarrior
 
@@ -118,8 +118,20 @@ class TConf:
     task_data: Path = Path("~/.task")
     """The path to the taskwarrior data directory."""
 
-    notes_dir: Path = Path("~/.task/notes")
+    notes_dir: Path
     """The path to the notes directory."""
+    _notes_dir: Path | None = field(init=False, repr=False, default=None)
+
+    @property
+    def notes_dir(self) -> Path:
+        return self._notes_dir if self._notes_dir else self.task_data.joinpath("notes")
+
+    @notes_dir.setter
+    def notes_dir(self, value: Path | property | None):
+        if type(value) is property:
+            value = TConf._notes_dir
+        self._notes_dir = cast(Path, value)
+
     notes_ext: str = "md"
     """The extension of note files."""
     notes_annot: str = "Note"
