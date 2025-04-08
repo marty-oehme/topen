@@ -21,8 +21,9 @@ import configparser
 import os
 import subprocess
 import sys
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from pathlib import Path
+from typing import Any, Self
 
 from tasklib import Task, TaskWarrior
 
@@ -43,7 +44,7 @@ def main():
     opts_override = {"task_rc": TConf(0).task_rc} | parse_env() | parse_cli()
     conf_file = _real_path(opts_override["task_rc"])
     opts: dict = parse_conf(conf_file) | opts_override
-    cfg = conf_from_dict(opts)
+    cfg = TConf.from_dict(opts)
 
     if not cfg.task_id:
         _ = sys.stderr.write("Please provide task ID as argument.\n")
@@ -133,14 +134,16 @@ class TConf:
         self.task_data = _real_path(self.task_data)
         self.notes_dir = _real_path(self.notes_dir)
 
+    def __or__(self, other: Any, /) -> Self:
+        return self.__class__(**asdict(self) | asdict(other))
 
-def conf_from_dict(d: dict) -> TConf:
-    """Generate a TConf class from a dictionary.
+    @classmethod
+    def from_dict(cls, d: dict) -> Self:
+        """Generate a TConf class from a dictionary.
 
-    Turns a dictionary containing all the necessary entries into a TConf configuration file.
-    Will error if one any of the entries are missing.
-    """
-    return TConf(**d)
+        Turns a dictionary containing all the necessary entries into a TConf configuration file.
+        """
+        return cls(**d)
 
 
 def parse_cli() -> dict:
