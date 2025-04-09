@@ -85,4 +85,3 @@ jobs:
           changelog: CHANGELOG.md
           token: ${{ secrets.GITHUB_TOKEN }}
           draft: true
-          branch: main
