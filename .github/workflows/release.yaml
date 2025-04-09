@@ -11,7 +11,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.x'
+          python-version: "3.x"
       - name: Install the latest version of uv
         uses: astral-sh/setup-uv@v5
 
@@ -22,6 +22,27 @@ jobs:
         with:
           name: python-package-distributions
           path: dist/
+
+  publish-to-testpypi:
+    name: Test publishing to testpypi
+    runs-on: ubuntu-latest
+    needs:
+      - build
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/topen
+    permissions:
+      id-token: write
+    steps:
+      - name: Grab dist files
+        uses: actions/download-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
+      - name: Send off to TestPyPi
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
 
   publish-to-pypi:
     name: Publish dist to pypi
@@ -34,7 +55,6 @@ jobs:
       url: https://pypi.org/p/topen
     permissions:
       id-token: write
-
     steps:
       - name: Grab dist files
         uses: actions/download-artifact@v4
@@ -44,24 +64,17 @@ jobs:
       - name: Send off to PyPi
         uses: pypa/gh-action-pypi-publish@release/v1
 
-  publish-to-testpypi:
-    name: Test publishing to testpypi
+  create-release:
+    name: Create github release
     runs-on: ubuntu-latest
-    needs:
-      - build
-    environment:
-      name: testpypi
-      url: https://test.pypi.org/p/topen
+    if: startsWith(github.ref, 'refs/tags/')
     permissions:
-      id-token: write
-
+      contents: write
     steps:
-      - name: Grab dist files
-        uses: actions/download-artifact@v4
+      - uses: actions/checkout@v4
+      - uses: taiki-e/create-gh-release-action@v1
         with:
-          name: python-package-distributions
-          path: dist/
-      - name: Send off to TestPyPi
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          repository-url: https://test.pypi.org/legacy/
+          changelog: CHANGELOG.md
+          token: ${{ secrets.GITHUB_TOKEN }}
+          draft: true
+          branch: main
