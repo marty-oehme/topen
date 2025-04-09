@@ -1,4 +1,4 @@
-name: Publish python package to pypi and testpypi
+name: Publish release packages
 on:
   push:
     branches:
