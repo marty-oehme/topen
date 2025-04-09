@@ -20,3 +20,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Create any necessary parent directories for notes directory.
+
+## [0.1.0] - 2025-04-01
+
+### Added
+
+- Open task associated note files in specified editor
+- Create command line interface for option setting
+- Add license
+- Take `taskrc` location as cli option
+- Let user set `editor` or grab from `EDITOR`/`VISUAL` env vars
