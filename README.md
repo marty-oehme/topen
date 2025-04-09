@@ -1,7 +1,9 @@
 # Simple taskwarrior note management
 
-[Docs](https://marty-oehme.github.io/topen)
-[Pypi](https://pypi.org/project/topen)
+[![Static Badge](https://img.shields.io/badge/pdoc-Docs-blue)](https://marty-oehme.github.io/topen)
+[![PyPI - Version](https://img.shields.io/pypi/v/topen)](https://pypi.org/project/topen)
+[![GitHub Release](https://img.shields.io/github/v/release/marty-oehme/topen)](https://github.com/marty-oehme/topen/releases/latest)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/marty-oehme/topen/docs.yaml)
 
 A script without bells and whistles.
 Focuses on letting you quickly:
