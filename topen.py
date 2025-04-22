@@ -22,11 +22,13 @@ import os
 import subprocess
 import sys
 from collections import namedtuple
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, Self, cast
+from typing import Any, Self
 
 from tasklib import Task, TaskWarrior
+
+NON_EXISTENT_PATH = Path("%%%%I_DONT_EXIST_%%%%")
 
 
 def main():
@@ -118,43 +120,14 @@ class TConf:
 
     task_id: int
     """The id (or uuid) of the task to edit a note for."""
-    task_rc: Path
-    _task_rc: Path | None = field(init=False, repr=False, default=None)
+    task_rc: Path = NON_EXISTENT_PATH
     """The path to the taskwarrior taskrc file. Can be absolute or relative to cwd."""
-
-    @property
-    def task_rc(self) -> Path:
-        if self._task_rc:
-            return self._task_rc
-        elif _real_path("~/.taskrc").exists():
-            return _real_path("~/.taskrc")
-        elif _real_path("$XDG_CONFIG_HOME/task/taskrc").exists():
-            return _real_path("$XDG_CONFIG_HOME/task/taskrc")
-        else:
-            return _real_path("~/.config/task/taskrc")
-
-    @task_rc.setter
-    def task_rc(self, value: Path | property | None):
-        if type(value) is property:
-            value = TConf._notes_dir
-        self._task_rc = cast(Path, value)
 
     task_data: Path = Path("~/.task")
     """The path to the taskwarrior data directory. Can be absolute or relative to cwd."""
 
-    notes_dir: Path
+    notes_dir: Path = NON_EXISTENT_PATH
     """The path to the notes directory."""
-    _notes_dir: Path | None = field(init=False, repr=False, default=None)
-
-    @property
-    def notes_dir(self) -> Path:
-        return self._notes_dir if self._notes_dir else self.task_data.joinpath("notes")
-
-    @notes_dir.setter
-    def notes_dir(self, value: Path | property | None):
-        if type(value) is property:
-            value = TConf._notes_dir
-        self._notes_dir = cast(Path, value)
 
     notes_ext: str = "md"
     """The extension of note files."""
@@ -166,12 +139,27 @@ class TConf:
     """If set topen will give no feedback on note editing."""
 
     def __post_init__(self):
+        if self.task_rc == NON_EXISTENT_PATH:
+            self.task_rc = self._default_task_rc()
         self.task_rc = _real_path(self.task_rc)
         self.task_data = _real_path(self.task_data)
+        if self.notes_dir == NON_EXISTENT_PATH:
+            self.notes_dir = self._default_notes_dir()
         self.notes_dir = _real_path(self.notes_dir)
 
     def __or__(self, other: Any, /) -> Self:
         return self.__class__(**asdict(self) | asdict(other))
+
+    def _default_task_rc(self) -> Path:
+        if Path("~/.taskrc").exists():
+            return Path("~/.taskrc")
+        elif Path("$XDG_CONFIG_HOME/task/taskrc").exists():
+            return Path("$XDG_CONFIG_HOME/task/taskrc")
+        else:
+            return Path("~/.config/task/taskrc")
+
+    def _default_notes_dir(self) -> Path:
+        return self.task_data.joinpath("notes")
 
     @classmethod
     def from_dict(cls, d: dict) -> Self:
