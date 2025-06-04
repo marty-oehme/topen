@@ -190,6 +190,7 @@ you view the task.
     _ = parser.add_argument(
         "-d",
         "--notes-dir",
+        metavar="DIR",
         help="Location of topen notes files",
     )
     _ = parser.add_argument(
@@ -197,15 +198,22 @@ you view the task.
         action="store_true",
         help="Silence any verbose displayed information",
     )
-    _ = parser.add_argument("--extension", help="Extension of note files")
+    _ = parser.add_argument(
+        "--extension", metavar="EXT", help="Extension of note files"
+    )
     _ = parser.add_argument(
         "--annotation",
+        metavar="NOTE",
         help="Annotation content to set within taskwarrior",
     )
-    _ = parser.add_argument("--editor", help="Program to open note files with")
-    _ = parser.add_argument("--task-rc", help="Location of taskwarrior config file")
     _ = parser.add_argument(
-        "--task-data", help="Location of taskwarrior data directory"
+        "--editor", metavar="CMD", help="Program to open note files with"
+    )
+    _ = parser.add_argument(
+        "--task-rc", metavar="FILE", help="Location of taskwarrior config file"
+    )
+    _ = parser.add_argument(
+        "--task-data", metavar="DIR", help="Location of taskwarrior data directory"
     )
 
     p = parser.parse_args()
