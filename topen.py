@@ -93,8 +93,7 @@ def get_notes_file(uuid: str, notes_dir: Path, notes_ext: str) -> Path:
 def open_editor(file: Path, editor: str) -> None:
     """Opens a file with the chosen editor."""
     _ = whisper(f"Editing note: {file}")
-    proc = subprocess.Popen(f"{editor} {file}", shell=True)
-    _ = proc.wait()
+    _ = subprocess.run(f"{editor} {file}", shell=True)
 
 
 def add_annotation_if_missing(task: Task, annotation_content: str) -> None:
