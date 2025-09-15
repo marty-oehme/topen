@@ -52,7 +52,7 @@ Or just manually copy the `topen` file to a directory in your PATH.
 [tasklib](https://github.com/GothenburgBitFactory/tasklib) is the only dependency aside from the python standard library.
 
 If you just want to try the script out,
-feel free to do so by invoking it e.g. with `uvx git+https://git.martyoeh.me/Marty/topen.git`.
+feel free to do so by invoking it e.g. with `uvx topen`.
 
 If you want to install the trunk version instead of a versioned release simply substitute for the git path:
 
