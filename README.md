@@ -8,20 +8,12 @@
 A script without bells and whistles.
 Focuses on letting you quickly:
 
-- create notes for taskwarrior tasks
-- edit notes for taskwarrior tasks
+- create new notes for taskwarrior tasks
+- edit existing notes for taskwarrior tasks
 
 It does both by simply being invoked with `topen <task-id>`.
 
-Provide a taskwarrior task id or uuid and `topen` creates a new note file or lets
-you edit an existing one. Additionally it adds a small annotation to the task
-to let you see that there exists a note file next time you view the task.
-
-Should just work as-is without additional configuration in most modern taskwarrior setups.
-
-Can be configured through environment variables or cli options, see below.
-
-Can be used as-is with the `topen` command or directly from taskwarrior by being aliased in your `taskrc`:
+Or it can be used directly from taskwarrior by being aliased in your `taskrc`:
 
 ```conf
 alias.note=exec topen
@@ -30,7 +22,15 @@ alias.note=exec topen
 And you can open any note with your usual taskwarrior workflow,
 by doing `task note <id>`.
 
+Provide a taskwarrior task id or uuid and `topen` creates a new note file or lets
+you edit an existing one. Additionally it adds a small annotation to the task
+to let you see that there exists a note file next time you view the task.
+
 That's all there is to it.
+
+Everything should just work as-is without additional configuration in most modern taskwarrior setups.
+
+But if you want, many settings can be configured through your taskrc file, environment variables, or cli options, see below.
 
 ## Installation
 
