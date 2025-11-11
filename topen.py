@@ -69,6 +69,8 @@ def main():
 
     if fpath.exists():
         add_annotation_if_missing(task, annotation_content=cfg.notes_annot)
+        return
+    whisper("No note file, doing nothing.")
 
 
 def get_task(id: str | int, data_location: Path) -> Task:
@@ -92,7 +94,7 @@ def get_notes_file(uuid: str, notes_dir: Path, notes_ext: str) -> Path:
 
 def open_editor(file: Path, editor: str) -> None:
     """Opens a file with the chosen editor."""
-    _ = whisper(f"Editing note: {file}")
+    whisper(f"Editing note: {file}")
     _ = subprocess.run(f"{editor} {file}", shell=True)
 
 
