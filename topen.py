@@ -12,7 +12,7 @@ You can make use of the open editor and utility functions to find and edit
 notes, either filling in the required configuration manually or passing around
 a TConf configuration object containing them all. If choosing the latter, you can
 read the configuration in part from a `taskrc` file using the utility function
-`parse_conf()`.
+`parse_rc()`.
 
 """
 
@@ -45,7 +45,7 @@ def main():
     """
     opts_override = {"task_rc": TConf(0).task_rc} | parse_env() | parse_cli()
     conf_file = _real_path(opts_override["task_rc"])
-    opts: dict = parse_conf(conf_file) | opts_override
+    opts: dict = parse_rc(conf_file) | opts_override
     cfg = TConf.from_dict(opts)
 
     if not cfg.task_id:
@@ -293,7 +293,7 @@ def parse_env() -> dict[str, Any]:
     return out
 
 
-def parse_conf(rc_path: Path) -> dict:
+def parse_rc(rc_path: Path) -> dict:
     """Parse taskrc configuration file options.
 
     Returns them as a simple dict object.
