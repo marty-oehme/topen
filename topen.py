@@ -30,7 +30,7 @@ from tasklib import Task, TaskWarrior
 NON_EXISTENT_PATH = Path("%%%%I_DONT_EXIST_%%%%")
 
 
-def main():
+def main(cfg: "TConf | None" = None):
     """Runs the cli interface.
 
     First sets up the correct options, with overrides in the following order:
@@ -43,10 +43,8 @@ def main():
 
     If the task does not yet have a note annotation it also adds it automatically.
     """
-    opts_override = {"task_rc": TConf(0).task_rc} | parse_env() | parse_cli()
-    conf_file = _real_path(opts_override["task_rc"])
-    opts: dict = parse_rc(conf_file) | opts_override
-    cfg = TConf.from_dict(opts)
+    if not cfg:
+        cfg = build_config()
 
     if not cfg.task_id:
         _ = sys.stderr.write("Please provide task ID as argument.\n")
@@ -245,6 +243,23 @@ class TConf:
         Turns a dictionary containing all the necessary entries into a TConf configuration file.
         """
         return cls(**d)
+
+
+def build_config() -> TConf:
+    """Return final configuration object."""
+    cli = parse_cli()
+    env = parse_env()
+    rc_path = Path(
+        cli.get("task_rc") or env.get("task_rc") or TConf(0).task_rc
+    ).expanduser()
+    rc = parse_rc(rc_path) if rc_path.exists() else {}
+
+    # we use the 'parsed' XDG-included taskrc locations for defaults
+    defaults = {k: opt.default for k, opt in OPTIONS.items()}
+    defaults["task_rc"] = rc_path
+
+    merged = defaults | rc | env | cli  # later wins
+    return TConf.from_dict({k: v for k, v in merged.items() if v is not None})
 
 
 def parse_cli() -> dict:
