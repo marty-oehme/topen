@@ -21,7 +21,6 @@ import configparser
 import os
 import subprocess
 import sys
-from collections import namedtuple
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Self
@@ -113,6 +112,83 @@ def add_annotation_if_missing(task: Task, annotation_content: str) -> None:
 
 
 @dataclass()
+class Opt:
+    """Assembled metadata for a single configuration option."""
+
+    cli: tuple[str, ...] | None
+    env: str | None
+    rc: str | None
+    default: Any = None
+    metavar: str | None = None
+    cast: type = str
+    help_text: str = ""
+
+
+OPTIONS: dict[str, Opt] = {
+    "task_id": Opt(None, None, None, default=None),
+    "task_rc": Opt(
+        ("--task-rc",),
+        "TASKRC",
+        None,  # taskrc has no key for this
+        default=Path("~/.taskrc"),
+        metavar="FILE",
+        cast=Path,
+        help_text="Location of taskwarrior config file",
+    ),
+    "task_data": Opt(
+        ("--task-data",),
+        "TASKDATA",
+        "data.location",
+        default=Path("~/.task"),
+        metavar="DIR",
+        cast=Path,
+        help_text="Location of taskwarrior data directory",
+    ),
+    "notes_dir": Opt(
+        ("-d", "--notes-dir"),
+        "TOPEN_NOTES_DIR",
+        "notes.dir",
+        default=None,  # resolved later in TConf.__post_init__
+        metavar="DIR",
+        cast=Path,
+        help_text="Location of topen notes files",
+    ),
+    "notes_ext": Opt(
+        ("--extension",),
+        "TOPEN_NOTES_EXT",
+        "notes.ext",
+        default="md",
+        metavar="EXT",
+        help_text="Extension of note files",
+    ),
+    "notes_annot": Opt(
+        ("--annotation",),
+        "TOPEN_NOTES_ANNOT",
+        "notes.annot",
+        default="Note",
+        metavar="NOTE",
+        help_text="Annotation content to set within taskwarrior",
+    ),
+    "notes_editor": Opt(
+        ("--editor",),
+        "TOPEN_NOTES_EDITOR",
+        "notes.editor",
+        default=os.getenv("EDITOR") or os.getenv("VISUAL") or "nano",
+        metavar="CMD",
+        help_text="Program to open note files with",
+    ),
+    "notes_quiet": Opt(
+        ("--quiet",),
+        "TOPEN_NOTES_QUIET",
+        "notes.quiet",
+        default=False,
+        cast=bool,
+        help_text="Silence any verbose displayed information",
+    ),
+}
+
+
+@dataclass()
 class TConf:
     """Topen Configuration
 
@@ -189,93 +265,50 @@ you view the task.
     _ = parser.add_argument(
         "id", help="The id/uuid of the taskwarrior task for which we edit notes"
     )
-    _ = parser.add_argument(
-        "-d",
-        "--notes-dir",
-        metavar="DIR",
-        help="Location of topen notes files",
-    )
-    _ = parser.add_argument(
-        "--quiet",
-        action="store_true",
-        help="Silence any verbose displayed information",
-    )
-    _ = parser.add_argument(
-        "--extension", metavar="EXT", help="Extension of note files"
-    )
-    _ = parser.add_argument(
-        "--annotation",
-        metavar="NOTE",
-        help="Annotation content to set within taskwarrior",
-    )
-    _ = parser.add_argument(
-        "--editor", metavar="CMD", help="Program to open note files with"
-    )
-    _ = parser.add_argument(
-        "--task-rc", metavar="FILE", help="Location of taskwarrior config file"
-    )
-    _ = parser.add_argument(
-        "--task-data", metavar="DIR", help="Location of taskwarrior data directory"
-    )
-
-    p = parser.parse_args()
-    return _filtered_dict(
-        {
-            "task_id": p.id,
-            "task_rc": p.task_rc,
-            "task_data": p.task_data,
-            "notes_dir": p.notes_dir,
-            "notes_ext": p.extension,
-            "notes_annot": p.annotation,
-            "notes_editor": p.editor,
-            "notes_quiet": p.quiet,
-        }
-    )
+    for key, opt in OPTIONS.items():
+        if opt.cli is None:
+            continue
+        parser.add_argument(
+            *opt.cli,
+            dest=key,
+            metavar=opt.metavar,
+            help=opt.help_text,
+            default=None,
+        )
+    args = parser.parse_args()
+    cli_vals = {k: v for k, v in vars(args).items() if v is not None}
+    cli_vals["task_id"] = cli_vals.pop("id")
+    return cli_vals
 
 
-def parse_env() -> dict:
+def parse_env() -> dict[str, Any]:
     """Parse environment variable options.
 
     Returns them as a simple dict object.
     """
-    return _filtered_dict(
-        {
-            "task_rc": os.getenv("TASKRC"),
-            "task_data": os.getenv("TASKDATA"),
-            "notes_dir": os.getenv("TOPEN_NOTES_DIR"),
-            "notes_ext": os.getenv("TOPEN_NOTES_EXT"),
-            "notes_annot": os.getenv("TOPEN_NOTES_ANNOT"),
-            "notes_editor": os.getenv("TOPEN_NOTES_EDITOR"),
-            "notes_quiet": os.getenv("TOPEN_NOTES_QUIET"),
-        }
-    )
+    out: dict[str, Any] = {}
+    for key, opt in OPTIONS.items():
+        if opt.env and (val := os.getenv(opt.env)) is not None:
+            out[key] = opt.cast(val)
+    return out
 
 
-def parse_conf(conf_file: Path) -> dict:
+def parse_conf(rc_path: Path) -> dict:
     """Parse taskrc configuration file options.
 
     Returns them as a simple dict object.
     Uses dot.annotation for options just like taskwarrior settings.
     """
     cfg = configparser.ConfigParser(allow_unnamed_section=True, allow_no_value=True)
-    with open(conf_file.expanduser()) as f:
-        cfg.read_string("[GENERAL]\n" + f.read())
+    with rc_path.expanduser().open() as fr:
+        cfg.read_string("[GENERAL]\n" + fr.read())
 
-    ConfTrans = namedtuple("ParsedToTConf", ["name", "tconf_name"])
-    return _filtered_dict(
-        {
-            opt.tconf_name: cfg.get("GENERAL", opt.name)
-            for opt in [
-                ConfTrans("data.location", "task_data"),
-                ConfTrans("notes.dir", "notes_dir"),
-                ConfTrans("notes.ext", "notes_ext"),
-                ConfTrans("notes.annot", "notes_annot"),
-                ConfTrans("notes.editor", "notes_editor"),
-                ConfTrans("notes.quiet", "notes_quiet"),
-            ]
-            if cfg.has_option("GENERAL", opt.name)
-        }
-    )
+    out: dict[str, Any] = {}
+    for key, opt in OPTIONS.items():
+        if opt.rc and cfg.has_option("GENERAL", opt.rc):
+            raw = cfg.get("GENERAL", opt.rc)
+            out[key] = opt.cast(raw)
+    return out
 
 
 IS_QUIET = False
@@ -288,12 +321,6 @@ def whisper(text: str) -> None:
 
 def _real_path(p: Path | str) -> Path:
     return Path(os.path.expandvars(p)).expanduser()
-
-
-# A None-filtered dict which only contains
-# keys which have a value.
-def _filtered_dict(d: dict) -> dict:
-    return {k: v for (k, v) in d.items() if v}
 
 
 if __name__ == "__main__":
