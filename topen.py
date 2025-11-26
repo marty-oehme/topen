@@ -257,14 +257,14 @@ def parse_conf(conf_file: Path) -> dict:
     Returns them as a simple dict object.
     Uses dot.annotation for options just like taskwarrior settings.
     """
-    c = configparser.ConfigParser(allow_unnamed_section=True, allow_no_value=True)
+    cfg = configparser.ConfigParser(allow_unnamed_section=True, allow_no_value=True)
     with open(conf_file.expanduser()) as f:
-        c.read_string("[GENERAL]\n" + f.read())
+        cfg.read_string("[GENERAL]\n" + f.read())
 
     ConfTrans = namedtuple("ParsedToTConf", ["name", "tconf_name"])
     return _filtered_dict(
         {
-            opt.tconf_name: c.get("GENERAL", opt.name)
+            opt.tconf_name: cfg.get("GENERAL", opt.name)
             for opt in [
                 ConfTrans("data.location", "task_data"),
                 ConfTrans("notes.dir", "notes_dir"),
@@ -273,7 +273,7 @@ def parse_conf(conf_file: Path) -> dict:
                 ConfTrans("notes.editor", "notes_editor"),
                 ConfTrans("notes.quiet", "notes_quiet"),
             ]
-            if c.has_option("GENERAL", opt.name)
+            if cfg.has_option("GENERAL", opt.name)
         }
     )
 
