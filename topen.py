@@ -122,13 +122,25 @@ class Opt:
     help_text: str = ""
 
 
+def _real_path(p: Path | str) -> Path:
+    return Path(os.path.expandvars(p)).expanduser()
+
+
+def _determine_default_task_rc() -> Path:
+    if _real_path("~/.taskrc").exists():
+        return _real_path("~/.taskrc")
+    if _real_path("$XDG_CONFIG_HOME/task/taskrc").exists():
+        return _real_path("$XDG_CONFIG_HOME/task/taskrc")
+    return _real_path("~/.config/task/taskrc")
+
+
 OPTIONS: dict[str, Opt] = {
     "task_id": Opt(None, None, None, default=None),
     "task_rc": Opt(
         ("--task-rc",),
         "TASKRC",
         None,  # taskrc has no key for this
-        default=Path("~/.taskrc"),
+        default=_determine_default_task_rc(),
         metavar="FILE",
         cast=Path,
         help_text="Location of taskwarrior config file",
@@ -214,8 +226,6 @@ class TConf:
     """If set topen will give no feedback on note editing."""
 
     def __post_init__(self):
-        if self.task_rc == NON_EXISTENT_PATH:
-            self.task_rc = self._default_task_rc()
         self.task_rc = _real_path(self.task_rc)
         self.task_data = _real_path(self.task_data)
         if self.notes_dir == NON_EXISTENT_PATH:
@@ -224,14 +234,6 @@ class TConf:
 
     def __or__(self, other: Any, /) -> Self:
         return self.__class__(**asdict(self) | asdict(other))
-
-    def _default_task_rc(self) -> Path:
-        if Path("~/.taskrc").exists():
-            return Path("~/.taskrc")
-        elif Path("$XDG_CONFIG_HOME/task/taskrc").exists():
-            return Path("$XDG_CONFIG_HOME/task/taskrc")
-        else:
-            return Path("~/.config/task/taskrc")
 
     def _default_notes_dir(self) -> Path:
         return self.task_data.joinpath("notes")
@@ -250,7 +252,7 @@ def build_config() -> TConf:
     cli = parse_cli()
     env = parse_env()
     rc_path = Path(
-        cli.get("task_rc") or env.get("task_rc") or TConf(0).task_rc
+        cli.get("task_rc") or env.get("task_rc") or OPTIONS["task_rc"].default
     ).expanduser()
     rc = parse_rc(rc_path) if rc_path.exists() else {}
 
@@ -332,10 +334,6 @@ IS_QUIET = False
 def whisper(text: str) -> None:
     if not IS_QUIET:
         print(text)
-
-
-def _real_path(p: Path | str) -> Path:
-    return Path(os.path.expandvars(p)).expanduser()
 
 
 if __name__ == "__main__":
