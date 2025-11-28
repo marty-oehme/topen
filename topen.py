@@ -30,7 +30,7 @@ from tasklib import Task, TaskWarrior
 NON_EXISTENT_PATH = Path("%%%%I_DONT_EXIST_%%%%")
 
 
-def main(cfg: "TConf | None" = None):
+def main(cfg: "TConf | None" = None, io: "_IO | None" = None):
     """Runs the cli interface.
 
     First sets up the correct options, with overrides in the following order:
@@ -45,29 +45,31 @@ def main(cfg: "TConf | None" = None):
     """
     if not cfg:
         cfg = build_config()
+    if not io:
+        io = _IO(quiet=cfg.notes_quiet)
 
     if not cfg.task_id:
-        _ = sys.stderr.write("Please provide task ID as argument.\n")
-    if cfg.notes_quiet:
-        global IS_QUIET
-        IS_QUIET = True
+        _ = io.err("Please provide task ID as argument.\n")
 
     task = get_task(id=cfg.task_id, data_location=cfg.task_data)
     uuid = task["uuid"]
     if not uuid:
-        _ = sys.stderr.write(f"Could not find task for ID: {cfg.task_id}.")
+        _ = io.err(f"Could not find task for ID: {cfg.task_id}.")
         sys.exit(1)
 
     fpath = get_notes_file(uuid, notes_dir=cfg.notes_dir, notes_ext=cfg.notes_ext)
 
     if not fpath.parent.exists():
         fpath.parent.mkdir(parents=True, exist_ok=True)
+
+    io.out(f"Editing note: {fpath}")
     open_editor(fpath, editor=cfg.notes_editor)
 
     if fpath.exists():
         add_annotation_if_missing(task, annotation_content=cfg.notes_annot)
+        io.out(f"Added annotation: {cfg.notes_annot}")
         return
-    whisper("No note file, doing nothing.")
+    io.out("No note file, doing nothing.")
 
 
 def get_task(id: str | int, data_location: Path) -> Task:
@@ -91,7 +93,6 @@ def get_notes_file(uuid: str, notes_dir: Path, notes_ext: str) -> Path:
 
 def open_editor(file: Path, editor: str) -> None:
     """Opens a file with the chosen editor."""
-    whisper(f"Editing note: {file}")
     _ = subprocess.run(f"{editor} {file}", shell=True)
 
 
@@ -106,7 +107,6 @@ def add_annotation_if_missing(task: Task, annotation_content: str) -> None:
         if annot["description"] == annotation_content:
             return
     task.add_annotation(annotation_content)
-    _ = whisper(f"Added annotation: {annotation_content}")
 
 
 @dataclass()
@@ -328,12 +328,16 @@ def parse_rc(rc_path: Path) -> dict:
     return out
 
 
-IS_QUIET = False
+class _IO:
+    def __init__(self, quiet: bool = False) -> None:
+        self.quiet = quiet
 
+    def out(self, text: str) -> None:
+        if not self.quiet:
+            print(text)
 
-def whisper(text: str) -> None:
-    if not IS_QUIET:
-        print(text)
+    def err(self, text: str) -> None:
+        sys.stderr.write(text)
 
 
 if __name__ == "__main__":
