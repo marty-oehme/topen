@@ -60,3 +60,29 @@ class TestEnv:
         env = parse_env()
         assert env["task_rc"] == Path("/a/dir/that/dont/exist/file")
         assert env["task_data"] == Path("~/somewhere/tasks")
+
+
+@pytest.fixture
+def fake_rc(tmp_path: Path, monkeypatch):
+    rc = tmp_path / "test.taskrc"
+    monkeypatch.setattr(OPTIONS["task_rc"], "default", rc)
+    return rc
+
+
+class TestRcFile:
+    def test_taskrc_parsing(self, fake_rc):
+        fake_rc.write_text("""
+        data.location=~/.taskies
+        notes.dir=/there
+        notes.ext=yaml
+        notes.annot=Boo!
+        notes.editor=micro
+        notes.quiet=true
+        """)
+        rc_cfg = parse_rc(fake_rc)
+        assert rc_cfg["task_data"] == Path("~/.taskies")
+        assert rc_cfg["notes_dir"] == Path("/there")
+        assert rc_cfg["notes_ext"] == "yaml"
+        assert rc_cfg["notes_annot"] == "Boo!"
+        assert rc_cfg["notes_editor"] == "micro"
+        assert rc_cfg["notes_quiet"] is True
