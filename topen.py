@@ -23,14 +23,14 @@ import subprocess
 import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, Self
+from typing import Any, Self, cast
 
 from tasklib import Task, TaskWarrior
 
 NON_EXISTENT_PATH = Path("%%%%I_DONT_EXIST_%%%%")
 
 
-def main(cfg: "TConf | None" = None, io: "_IO | None" = None):
+def main(cfg: "TConf | None" = None, io: "_IO | None" = None) -> int:
     """Runs the cli interface.
 
     First sets up the correct options, with overrides in the following order:
@@ -42,6 +42,8 @@ def main(cfg: "TConf | None" = None, io: "_IO | None" = None):
     pointing to the file.
 
     If the task does not yet have a note annotation it also adds it automatically.
+
+    Returns the status code as int, 0 for success, 1 for error.
     """
     if not cfg:
         cfg = build_config()
@@ -50,12 +52,14 @@ def main(cfg: "TConf | None" = None, io: "_IO | None" = None):
 
     if not cfg.task_id:
         _ = io.err("Please provide task ID as argument.\n")
+        return 1
 
-    task = get_task(id=cfg.task_id, data_location=cfg.task_data)
-    uuid = task["uuid"]
-    if not uuid:
-        _ = io.err(f"Could not find task for ID: {cfg.task_id}.")
-        sys.exit(1)
+    try:
+        task = get_task(id=cfg.task_id, data_location=cfg.task_data)
+        uuid = cast(str, task["uuid"])
+    except Task.DoesNotExist:
+        _ = io.err(f"Could not find task for ID: {cfg.task_id}.\n")
+        return 1
 
     fpath = get_notes_file(uuid, notes_dir=cfg.notes_dir, notes_ext=cfg.notes_ext)
 
@@ -68,8 +72,9 @@ def main(cfg: "TConf | None" = None, io: "_IO | None" = None):
     if fpath.exists():
         add_annotation_if_missing(task, annotation_content=cfg.notes_annot)
         io.out(f"Added annotation: {cfg.notes_annot}")
-        return
+        return 0
     io.out("No note file, doing nothing.")
+    return 0
 
 
 def get_task(id: str | int, data_location: Path) -> Task:
@@ -341,4 +346,5 @@ class _IO:
 
 
 if __name__ == "__main__":
-    main()
+    exit = main()
+    sys.exit(exit)
