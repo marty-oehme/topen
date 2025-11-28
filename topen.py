@@ -70,8 +70,9 @@ def main(cfg: "TConf | None" = None, io: "_IO | None" = None) -> int:
     open_editor(fpath, editor=cfg.notes_editor)
 
     if fpath.exists():
-        add_annotation_if_missing(task, annotation_content=cfg.notes_annot)
-        io.out(f"Added annotation: {cfg.notes_annot}")
+        if is_annotation_missing(task, annotation_content=cfg.notes_annot):
+            add_annotation(task, annotation_content=cfg.notes_annot)
+            io.out(f"Added annotation: {cfg.notes_annot}")
         return 0
     io.out("No note file, doing nothing.")
     return 0
@@ -101,16 +102,22 @@ def open_editor(file: Path, editor: str) -> None:
     _ = subprocess.run(f"{editor} {file}", shell=True)
 
 
-def add_annotation_if_missing(task: Task, annotation_content: str) -> None:
-    """Conditionally adds an annotation to a task.
+def is_annotation_missing(task: Task, annotation_content: str) -> bool:
+    """Checks if the task is missing the annotation.
 
-    Only adds the annotation if the task does not yet have an
-    annotation with exactly that content (i.e. avoids
-    duplication).
+    Only succeeds if the _complete_ annatotation is found,
+    and not just as a substring.
+
+    Returns True if annotation was added, otherwise False.
     """
     for annot in task["annotations"] or []:
         if annot["description"] == annotation_content:
-            return
+            return False
+    return True
+
+
+def add_annotation(task: Task, annotation_content: str) -> None:
+    """Adds an annotation to a task."""
     task.add_annotation(annotation_content)
 
 
