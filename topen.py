@@ -207,22 +207,22 @@ class TConf:
 
     task_id: int
     """The id (or uuid) of the task to edit a note for."""
-    task_rc: Path = NON_EXISTENT_PATH
+    task_rc: Path = OPTIONS["task_rc"].default
     """The path to the taskwarrior taskrc file. Can be absolute or relative to cwd."""
 
-    task_data: Path = Path("~/.task")
+    task_data: Path = OPTIONS["task_data"].default
     """The path to the taskwarrior data directory. Can be absolute or relative to cwd."""
 
     notes_dir: Path = NON_EXISTENT_PATH
     """The path to the notes directory."""
 
-    notes_ext: str = "md"
+    notes_ext: str = OPTIONS["notes_ext"].default
     """The extension of note files."""
-    notes_annot: str = "Note"
+    notes_annot: str = OPTIONS["notes_annot"].default
     """The annotation to add to taskwarrior tasks with notes."""
-    notes_editor: str = os.getenv("EDITOR") or os.getenv("VISUAL") or "nano"
+    notes_editor: str = OPTIONS["notes_editor"].default
     """The editor to open note files with."""
-    notes_quiet: bool = False
+    notes_quiet: bool = OPTIONS["notes_quiet"].default
     """If set topen will give no feedback on note editing."""
 
     def __post_init__(self):
