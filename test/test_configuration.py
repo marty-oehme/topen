@@ -107,3 +107,16 @@ class TestTConf:
     def test_default_notes_sub_dir(self):
         cfg = TConf.from_dict({"task_data": "~/my/tasks", "task_id": 0})
         assert cfg.notes_dir == Path("~/my/tasks/notes").expanduser()
+
+    @pytest.mark.parametrize(
+        "env,expected",
+        [
+            ({"EDITOR": "vim"}, "vim"),
+            ({"VISUAL": "emacs", "EDITOR": ""}, "emacs"),
+            ({"VISUAL": "nvim", "EDITOR": "notepad"}, "notepad"),
+        ],
+    )
+    def test_editor_env_resolution(isolate_env, monkeypatch, env, expected):
+        for k, v in env.items():
+            monkeypatch.setenv(k, v)
+        assert TConf(0).notes_editor == expected

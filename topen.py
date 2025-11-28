@@ -188,7 +188,7 @@ OPTIONS: dict[str, Opt] = {
         ("--editor",),
         "TOPEN_NOTES_EDITOR",
         "notes.editor",
-        default=os.getenv("EDITOR") or os.getenv("VISUAL") or "nano",
+        default="nano",
         metavar="CMD",
         help_text="Program to open note files with",
     ),
@@ -225,7 +225,7 @@ class TConf:
     """The extension of note files."""
     notes_annot: str = OPTIONS["notes_annot"].default
     """The annotation to add to taskwarrior tasks with notes."""
-    notes_editor: str = OPTIONS["notes_editor"].default
+    notes_editor: str = ""  # added in post-init
     """The editor to open note files with."""
     notes_quiet: bool = OPTIONS["notes_quiet"].default
     """If set topen will give no feedback on note editing."""
@@ -236,6 +236,12 @@ class TConf:
         if self.notes_dir == NON_EXISTENT_PATH:
             self.notes_dir = self._default_notes_dir()
         self.notes_dir = _real_path(self.notes_dir)
+        if not self.notes_editor:
+            self.notes_editor = (
+                os.getenv("EDITOR")
+                or os.getenv("VISUAL")
+                or OPTIONS["notes_editor"].default
+            )
 
     def __or__(self, other: Any, /) -> Self:
         return self.__class__(**asdict(self) | asdict(other))
