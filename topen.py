@@ -295,6 +295,7 @@ you view the task.
             dest=key,
             metavar=opt.metavar,
             help=opt.help_text,
+            type=opt.cast or str,
             default=None,
         )
     args = parser.parse_args()
