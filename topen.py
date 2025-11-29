@@ -133,7 +133,7 @@ class Opt:
     is_flag: bool = False
 
 
-def _real_path(p: Path | str) -> Path:
+def _expand_path(p: Path | str) -> Path:
     return Path(os.path.expandvars(p)).expanduser()
 
 
@@ -143,11 +143,11 @@ def _ensure_parent_dir(file: Path) -> None:
 
 
 def _determine_default_task_rc() -> Path:
-    if _real_path("~/.taskrc").exists():
-        return _real_path("~/.taskrc")
-    if _real_path("$XDG_CONFIG_HOME/task/taskrc").exists():
-        return _real_path("$XDG_CONFIG_HOME/task/taskrc")
-    return _real_path("~/.config/task/taskrc")
+    if _expand_path("~/.taskrc").exists():
+        return _expand_path("~/.taskrc")
+    if _expand_path("$XDG_CONFIG_HOME/task/taskrc").exists():
+        return _expand_path("$XDG_CONFIG_HOME/task/taskrc")
+    return _expand_path("~/.config/task/taskrc")
 
 
 def _strtobool(val: str) -> bool:
@@ -261,11 +261,11 @@ class TConf:
     """If set topen will give no feedback on note editing."""
 
     def __post_init__(self):
-        self.task_rc = _real_path(self.task_rc)
-        self.task_data = _real_path(self.task_data)
+        self.task_rc = _expand_path(self.task_rc)
+        self.task_data = _expand_path(self.task_data)
         if self.notes_dir == NON_EXISTENT_PATH:
             self.notes_dir = self._default_notes_dir()
-        self.notes_dir = _real_path(self.notes_dir)
+        self.notes_dir = _expand_path(self.notes_dir)
         if not self.notes_editor:
             self.notes_editor = (
                 os.getenv("EDITOR")
