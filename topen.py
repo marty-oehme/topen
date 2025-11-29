@@ -23,7 +23,7 @@ import subprocess
 import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, Self, cast
+from typing import Any, Callable, Self, cast
 
 from tasklib import Task, TaskWarrior
 
@@ -130,8 +130,9 @@ class Opt:
     rc: str | None
     default: Any = None
     metavar: str | None = None
-    cast: type = str
+    cast: type | Callable = str
     help_text: str = ""
+    flag: bool = False
 
 
 def _real_path(p: Path | str) -> Path:
@@ -144,6 +145,24 @@ def _determine_default_task_rc() -> Path:
     if _real_path("$XDG_CONFIG_HOME/task/taskrc").exists():
         return _real_path("$XDG_CONFIG_HOME/task/taskrc")
     return _real_path("~/.config/task/taskrc")
+
+
+def _strtobool(val: str) -> bool:
+    """Convert a string representation of truth.
+
+    Coverts either to True or False, raising an error if it does not find a
+    valid value.
+    True values are 'y', 'yes', 't', 'true', 'on', and '1'; false values are 'n',
+    'no', 'f', 'false', 'off', and '0'.
+    Raises ValueError if 'val' is anything else.
+    """
+    val = val.lower()
+    if val in ("y", "yes", "t", "true", "on", "1"):
+        return True
+    elif val in ("n", "no", "f", "false", "off", "0"):
+        return False
+    else:
+        raise ValueError(f"Invalid boolean value {val}")
 
 
 OPTIONS: dict[str, Opt] = {
@@ -204,7 +223,7 @@ OPTIONS: dict[str, Opt] = {
         "TOPEN_NOTES_QUIET",
         "notes.quiet",
         default=False,
-        cast=bool,
+        cast=_strtobool,
         help_text="Silence any verbose displayed information",
     ),
 }
