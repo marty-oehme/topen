@@ -11,9 +11,7 @@ def test_open_editor_escapes_shell():
     run_mock.assert_called_once_with(["vim", "my note$1.txt"], check=True)
 
 
-#
-# def test_add_annotation_saves_task():
-#     task = Mock()
-#     add_annotation(task, "hello")
-#     task.add_annotation.assert_called_once_with("hello")
-#     task.save.assert_called_once()
+def test_add_annotation_calls_tasklib():
+    task = Mock()
+    add_annotation(task, "hello")
+    task.add_annotation.assert_called_once_with("hello")
