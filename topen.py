@@ -132,7 +132,7 @@ class Opt:
     metavar: str | None = None
     cast: type | Callable = str
     help_text: str = ""
-    flag: bool = False
+    is_flag: bool = False
 
 
 def _real_path(p: Path | str) -> Path:
@@ -224,7 +224,8 @@ OPTIONS: dict[str, Opt] = {
         "notes.quiet",
         default=False,
         cast=_strtobool,
-        help_text="Silence any verbose displayed information",
+        help_text="Silence any verbosely displayed information",
+        is_flag=True,
     ),
 }
 
@@ -320,6 +321,15 @@ you view the task.
     )
     for key, opt in OPTIONS.items():
         if opt.cli is None:
+            continue
+        if opt.is_flag:
+            parser.add_argument(
+                *opt.cli,
+                dest=key,
+                help=opt.help_text,
+                default=None,
+                action="store_true",
+            )
             continue
         parser.add_argument(
             *opt.cli,

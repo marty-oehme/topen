@@ -29,6 +29,17 @@ class TestCli:
             "notes_annot": "HERENOTE",
         }
 
+    def test_cli_notes_quiet_is_flag(self, monkeypatch):
+        monkeypatch.setattr(
+            "sys.argv",
+            [
+                "topen",
+                "123",
+                "--quiet",
+            ],
+        )
+        assert parse_cli()["notes_quiet"] is True
+
     def test_cli_parses_paths(self, monkeypatch):
         monkeypatch.setattr(
             "sys.argv",
