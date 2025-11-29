@@ -267,16 +267,15 @@ class TConf:
 
 def build_config() -> TConf:
     """Return final configuration object."""
-    cli = parse_cli()
+    defaults = {k: opt.default for k, opt in OPTIONS.items()}
     env = parse_env()
+    cli = parse_cli()
+
     rc_path = Path(
         cli.get("task_rc") or env.get("task_rc") or OPTIONS["task_rc"].default
     ).expanduser()
+    defaults["task_rc"] = rc_path  # use XDG-included paths
     rc = parse_rc(rc_path) if rc_path.exists() else {}
-
-    # we use the 'parsed' XDG-included taskrc locations for defaults
-    defaults = {k: opt.default for k, opt in OPTIONS.items()}
-    defaults["task_rc"] = rc_path
 
     merged = defaults | rc | env | cli  # later wins
     return TConf.from_dict({k: v for k, v in merged.items() if v is not None})
