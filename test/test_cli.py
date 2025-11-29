@@ -9,3 +9,11 @@ def test_open_editor_escapes_shell():
     with patch("subprocess.run") as run_mock:
         open_editor(Path("my note$1.txt"), "vim")
     run_mock.assert_called_once_with(["vim", "my note$1.txt"], check=True)
+
+
+#
+# def test_add_annotation_saves_task():
+#     task = Mock()
+#     add_annotation(task, "hello")
+#     task.add_annotation.assert_called_once_with("hello")
+#     task.save.assert_called_once()

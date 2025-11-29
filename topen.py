@@ -65,7 +65,7 @@ def main(cfg: "TConf | None" = None, io: "_IO | None" = None) -> int:
 
     _ensure_parent_dir(fpath)
     io.out(f"Editing note: {fpath}")
-    open_editor(fpath, editor=cfg.notes_editor)
+    open_editor(fpath, editor=cfg.notes_editor, io=io)
 
     if fpath.exists():
         if is_annotation_missing(task, annotation_content=cfg.notes_annot):
@@ -95,9 +95,13 @@ def get_notes_file(uuid: str, notes_dir: Path, notes_ext: str) -> Path:
     return Path(notes_dir).joinpath(f"{uuid}.{notes_ext}")
 
 
-def open_editor(file: Path, editor: str) -> None:
+def open_editor(file: Path, editor: str, io: "_IO | None" = None) -> None:
     """Opens a file with the chosen editor."""
-    _ = subprocess.run([editor, str(file)], check=True)
+    try:
+        _ = subprocess.run([editor, str(file)], check=True)
+    except subprocess.CalledProcessError:
+        if io:
+            io.err("Editor exited with an error, aborting.\n")
 
 
 def is_annotation_missing(task: Task, annotation_content: str) -> bool:
