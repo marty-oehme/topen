@@ -97,7 +97,7 @@ def get_notes_file(uuid: str, notes_dir: Path, notes_ext: str) -> Path:
 
 def open_editor(file: Path, editor: str) -> None:
     """Opens a file with the chosen editor."""
-    _ = subprocess.run(f"{editor} {file}", shell=True)
+    _ = subprocess.run([editor, str(file)], check=True)
 
 
 def is_annotation_missing(task: Task, annotation_content: str) -> bool:
