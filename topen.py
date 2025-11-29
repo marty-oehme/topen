@@ -63,9 +63,7 @@ def main(cfg: "TConf | None" = None, io: "_IO | None" = None) -> int:
 
     fpath = get_notes_file(uuid, notes_dir=cfg.notes_dir, notes_ext=cfg.notes_ext)
 
-    if not fpath.parent.exists():
-        fpath.parent.mkdir(parents=True, exist_ok=True)
-
+    _ensure_parent_dir(fpath)
     io.out(f"Editing note: {fpath}")
     open_editor(fpath, editor=cfg.notes_editor)
 
@@ -137,6 +135,11 @@ class Opt:
 
 def _real_path(p: Path | str) -> Path:
     return Path(os.path.expandvars(p)).expanduser()
+
+
+def _ensure_parent_dir(file: Path) -> None:
+    if not file.parent.exists():
+        file.parent.mkdir(parents=True, exist_ok=True)
 
 
 def _determine_default_task_rc() -> Path:
