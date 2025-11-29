@@ -51,14 +51,14 @@ def main(cfg: "TConf | None" = None, io: "_IO | None" = None) -> int:
         io = _IO(quiet=cfg.notes_quiet)
 
     if not cfg.task_id:
-        _ = io.err("Please provide task ID as argument.\n")
+        io.err("Please provide task ID as argument.\n")
         return 1
 
     try:
         task = get_task(id=cfg.task_id, data_location=cfg.task_data)
         uuid = cast(str, task["uuid"])
     except Task.DoesNotExist:
-        _ = io.err(f"Could not find task for ID: {cfg.task_id}.\n")
+        io.err(f"Could not find task for ID: {cfg.task_id}.\n")
         return 1
 
     fpath = get_notes_file(uuid, notes_dir=cfg.notes_dir, notes_ext=cfg.notes_ext)
