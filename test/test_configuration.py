@@ -7,6 +7,7 @@ import pytest
 
 from topen import TConf, build_config
 
+
 class TestTConf:
     def test_paths_are_expanded(self):
         cfg = TConf.from_dict(
@@ -61,6 +62,17 @@ class TestBuildConfigPrecedence:
         monkeypatch.setenv("TOPEN_NOTES_EXT", "from-env")
         cfg = build_config()
         assert cfg.notes_ext == "from-env"
+
+    def test_circular_env_vars(self, isolate_env, monkeypatch, fake_id):
+        """Test environment variables with circular references."""
+        for k, v in {
+            "TOPEN_NOTES_DIR": "$TOPEN_NOTES_DIR/subdir",
+            "EDITOR": "${EDITOR}_backup",
+        }.items():
+            monkeypatch.setenv(k, v)
+        cfg = build_config()
+        assert cfg.notes_dir == Path("$TOPEN_NOTES_DIR/subdir/subdir")
+        assert cfg.notes_editor == "nano"
 
     def test_cli_overrides_env(self, fake_rc, monkeypatch, isolate_env):
         fake_rc.write_text("notes.ext=from-rc\n")
