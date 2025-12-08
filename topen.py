@@ -63,7 +63,12 @@ def main(cfg: "TConf | None" = None, io: "_IO | None" = None) -> int:
 
     fpath = get_notes_file(uuid, notes_dir=cfg.notes_dir, notes_ext=cfg.notes_ext)
 
-    _ensure_parent_dir(fpath)
+    try:
+        _ensure_parent_dir(fpath)
+    except PermissionError:
+        io.err(f"Could not write required directories for path: {fpath}.\n")
+        return 1
+
     io.out(f"Editing note: {fpath}")
     open_editor(fpath, editor=cfg.notes_editor, io=io)
 
