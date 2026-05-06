@@ -29,6 +29,12 @@ from tasklib import Task, TaskWarrior
 
 NON_EXISTENT_PATH = Path("%%%%I_DONT_EXIST_%%%%")
 
+# list of all available sub-commands and cli aliases
+SUBCOMMANDS = {
+    "edit": "edit",
+    "path": "path",
+}
+
 
 def main(cfg: "TConf | None" = None, io: "_IO | None" = None) -> int:
     """Runs the cli interface.
@@ -46,9 +52,9 @@ def main(cfg: "TConf | None" = None, io: "_IO | None" = None) -> int:
     if not io:
         io = _IO(quiet=cfg.notes_quiet)
 
-    if cfg.command == "edit":
+    if cfg.command == SUBCOMMANDS["edit"]:
         return _cmd_edit(cfg, io)
-    elif cfg.command == "path":
+    elif cfg.command == SUBCOMMANDS["path"]:
         return _cmd_path(cfg, io)
     else:
         io.err(f"Unknown command: {cfg.command}\n")
@@ -181,6 +187,7 @@ class Opt:
     cast: type | Callable = str
     help_text: str = ""
     is_flag: bool = False
+    is_cli_shared: bool = False  # should be added to all cli commands
 
 
 def _expand_path(p: Path | str) -> Path:
@@ -228,6 +235,7 @@ OPTIONS: dict[str, Opt] = {
         metavar="FILE",
         cast=Path,
         help_text="Location of taskwarrior config file",
+        is_cli_shared=True,
     ),
     "task_data": Opt(
         ("--task-data",),
@@ -237,6 +245,7 @@ OPTIONS: dict[str, Opt] = {
         metavar="DIR",
         cast=Path,
         help_text="Location of taskwarrior data directory",
+        is_cli_shared=True,
     ),
     "notes_dir": Opt(
         ("-d", "--notes-dir"),
@@ -246,6 +255,7 @@ OPTIONS: dict[str, Opt] = {
         metavar="DIR",
         cast=Path,
         help_text="Location of topen notes files",
+        is_cli_shared=True,
     ),
     "notes_ext": Opt(
         ("--extension",),
@@ -254,6 +264,7 @@ OPTIONS: dict[str, Opt] = {
         default="md",
         metavar="EXT",
         help_text="Extension of note files",
+        is_cli_shared=True,
     ),
     "notes_annot": Opt(
         ("--annotation",),
@@ -262,6 +273,7 @@ OPTIONS: dict[str, Opt] = {
         default="Note",
         metavar="NOTE",
         help_text="Annotation content to set within taskwarrior",
+        is_cli_shared=True,
     ),
     "notes_editor": Opt(
         ("--editor",),
@@ -279,6 +291,7 @@ OPTIONS: dict[str, Opt] = {
         cast=_strtobool,
         help_text="Silence any verbosely displayed information",
         is_flag=True,
+        is_cli_shared=True,
     ),
 }
 
@@ -357,18 +370,6 @@ def build_config() -> TConf:
     return TConf.from_dict({k: v for k, v in merged.items() if v is not None})
 
 
-SUBCOMMANDS = ("edit", "path", "clean")
-
-SHARED_OPTION_KEYS = (
-    "task_rc",
-    "task_data",
-    "notes_dir",
-    "notes_ext",
-    "notes_annot",
-    "notes_quiet",
-)
-
-
 def _add_opt_to_parser(parser: argparse.ArgumentParser, key: str, opt: Opt) -> None:
     """Add a single OPTIONS entry to an argparse parser."""
     if opt.cli is None:
@@ -400,10 +401,13 @@ def parse_cli() -> dict:
     # Inject 'edit' subcommand for backward compat: `topen 42` → `topen edit 42`
     if (
         len(sys.argv) > 1
-        and sys.argv[1] not in SUBCOMMANDS
+        and sys.argv[1] not in SUBCOMMANDS.values()
         and sys.argv[1] not in ("-h", "--help")
     ):
         sys.argv.insert(1, "edit")
+
+    # gather all shared options
+    SHARED_OPTION_KEYS = [k for k, v in OPTIONS.items() if v.is_cli_shared]
 
     # Parent parser for options shared across all subcommands
     shared_parser = argparse.ArgumentParser(add_help=False)
