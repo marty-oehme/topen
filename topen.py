@@ -327,15 +327,6 @@ OPTIONS: dict[str, Opt] = {
         metavar="NOTE",
         help_text="Annotation content to set within taskwarrior",
     ),
-    "notes_editor": Opt(
-        ("--editor",),
-        "TOPEN_NOTES_EDITOR",
-        "notes.editor",
-        default="nano",
-        metavar="CMD",
-        help_text="Program to open note files with",
-        cli_subcommand=SUBCOMMANDS["edit"],
-    ),
     "notes_quiet": Opt(
         ("--quiet",),
         "TOPEN_NOTES_QUIET",
@@ -344,6 +335,15 @@ OPTIONS: dict[str, Opt] = {
         cast=_strtobool,
         help_text="Silence any verbosely displayed information",
         is_flag=True,
+    ),
+    "notes_editor": Opt(
+        ("--editor",),
+        "TOPEN_NOTES_EDITOR",
+        "notes.editor",
+        default="nano",
+        metavar="CMD",
+        help_text="Program to open note files with",
+        cli_subcommand=SUBCOMMANDS["edit"],
     ),
     "clean_delete": Opt(
         ("--delete",),
