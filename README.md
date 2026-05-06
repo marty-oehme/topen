@@ -10,8 +10,9 @@ Focuses on letting you quickly:
 
 - create new notes for taskwarrior tasks
 - edit existing notes for taskwarrior tasks
+- clean notes you don't need anymore
 
-It does both by simply being invoked with `topen <task-id>`.
+It handles all your note operations by simply being invoked with `topen <task-id>`.
 
 Or it can be used directly from taskwarrior by being aliased in your `taskrc`:
 
@@ -19,7 +20,7 @@ Or it can be used directly from taskwarrior by being aliased in your `taskrc`:
 alias.note=exec topen
 ```
 
-And you can open any note with your usual taskwarrior workflow,
+Then you can open any note with your usual taskwarrior workflow,
 by doing `task note <id>`.
 
 Provide a taskwarrior task id or uuid and `topen` creates a new note file or lets
@@ -27,10 +28,6 @@ you edit an existing one. Additionally it adds a small annotation to the task
 to let you see that there exists a note file next time you view the task.
 
 That's all there is to it.
-
-Everything should just work as-is without additional configuration in most modern taskwarrior setups.
-
-But if you want, many settings can be configured through your taskrc file, environment variables, or cli options, see below.
 
 ## Installation
 
@@ -59,6 +56,24 @@ If you want to install the trunk version instead of a versioned release simply s
 ```bash
 uv tool install git+https://git.martyoeh.me/Marty/topen.git
 ```
+
+### Usage
+
+While you can use `topen` perfectly fine by just invoking it with `topen <id>`, there are actually multiple subcommands.
+
+The most commonly used one is `topen edit <id>` which is what the above short-form actually expands into.
+This is the one that allows you to open your notes, edit them and automatically creates new note files if needed.
+
+When your notes directory gets too cluttered you can use `topen clean` to clean up all notes for which there is no more pending taskwarrior task.
+By default it will archive them by putting them into an (`archived`) subdirectory in your notes directory,
+but you can be more rigorous and delete them (`topen clean --delete`) or even put them somewhere completely different on your PC (`topen clean --archive-dir=~/archived`).
+
+You can also view the path of any note (whether it already exists or not) with the `topen path` subcommand.
+See below in the Tips & Tricks for some potential uses of this functionality.
+
+Everything should just work as-is without additional configuration in most modern taskwarrior setups.
+
+But if you want, many settings can be configured through your taskrc file, environment variables, or cli options, see below.
 
 ## Configuration
 
