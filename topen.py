@@ -187,7 +187,7 @@ class Opt:
     cast: type | Callable = str
     help_text: str = ""
     is_flag: bool = False
-    is_cli_shared: bool = False  # should be added to all cli commands
+    cli_subcommand: str | None = None  # which cli subcommand to add to as option
 
 
 def _expand_path(p: Path | str) -> Path:
@@ -235,7 +235,6 @@ OPTIONS: dict[str, Opt] = {
         metavar="FILE",
         cast=Path,
         help_text="Location of taskwarrior config file",
-        is_cli_shared=True,
     ),
     "task_data": Opt(
         ("--task-data",),
@@ -245,7 +244,6 @@ OPTIONS: dict[str, Opt] = {
         metavar="DIR",
         cast=Path,
         help_text="Location of taskwarrior data directory",
-        is_cli_shared=True,
     ),
     "notes_dir": Opt(
         ("-d", "--notes-dir"),
@@ -255,7 +253,6 @@ OPTIONS: dict[str, Opt] = {
         metavar="DIR",
         cast=Path,
         help_text="Location of topen notes files",
-        is_cli_shared=True,
     ),
     "notes_ext": Opt(
         ("--extension",),
@@ -264,7 +261,6 @@ OPTIONS: dict[str, Opt] = {
         default="md",
         metavar="EXT",
         help_text="Extension of note files",
-        is_cli_shared=True,
     ),
     "notes_annot": Opt(
         ("--annotation",),
@@ -273,7 +269,6 @@ OPTIONS: dict[str, Opt] = {
         default="Note",
         metavar="NOTE",
         help_text="Annotation content to set within taskwarrior",
-        is_cli_shared=True,
     ),
     "notes_editor": Opt(
         ("--editor",),
@@ -282,6 +277,7 @@ OPTIONS: dict[str, Opt] = {
         default="nano",
         metavar="CMD",
         help_text="Program to open note files with",
+        cli_subcommand=SUBCOMMANDS["edit"],
     ),
     "notes_quiet": Opt(
         ("--quiet",),
@@ -291,7 +287,6 @@ OPTIONS: dict[str, Opt] = {
         cast=_strtobool,
         help_text="Silence any verbosely displayed information",
         is_flag=True,
-        is_cli_shared=True,
     ),
 }
 
@@ -407,7 +402,7 @@ def parse_cli() -> dict:
         sys.argv.insert(1, "edit")
 
     # gather all shared options
-    SHARED_OPTION_KEYS = [k for k, v in OPTIONS.items() if v.is_cli_shared]
+    SHARED_OPTION_KEYS = [k for k, v in OPTIONS.items() if v.cli_subcommand is None]
 
     # Parent parser for options shared across all subcommands
     shared_parser = argparse.ArgumentParser(add_help=False)
@@ -424,7 +419,7 @@ to let you see that there exists a note file next time
 you view the task.
 """,
     )
-    # Shared options at root level: `topen --notes-dir /foo clean`
+    # Recognize shared options at root level: `topen --notes-dir /foo clean`
     for key in SHARED_OPTION_KEYS:
         _add_opt_to_parser(parser, key, OPTIONS[key])
 
@@ -432,25 +427,33 @@ you view the task.
 
     # edit subparser
     edit_parser = subparsers.add_parser(
-        "edit",
+        SUBCOMMANDS["edit"],
         help="Open or create a note for a task (default)",
         parents=[shared_parser],
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     edit_parser.add_argument(
-        "id", help="The id/uuid of the taskwarrior task for which we edit notes"
+        "id", help="The id/uuid of the taskwarrior task for which to edit note"
     )
     # Edit-specific options
-    _add_opt_to_parser(edit_parser, "notes_editor", OPTIONS["notes_editor"])
-    _add_opt_to_parser(edit_parser, "show_path", OPTIONS["show_path"])
+    for opt_name, opt in {
+        k: v for k, v in OPTIONS.items() if v.cli_subcommand == SUBCOMMANDS["edit"]
+    }.items():
+        _add_opt_to_parser(edit_parser, opt_name, opt)
 
     # path subparser
     path_parser = subparsers.add_parser(
-        "path",
+        SUBCOMMANDS["path"],
         help="Print the note file path for a task",
         parents=[shared_parser],
     )
-    path_parser.add_argument("id", help="The id/uuid of the taskwarrior task")
+    path_parser.add_argument(
+        "id", help="The id/uuid of the taskwarrior task for which to show path"
+    )
+    for opt_name, opt in {
+        k: v for k, v in OPTIONS.items() if v.cli_subcommand == SUBCOMMANDS["path"]
+    }.items():
+        _add_opt_to_parser(path_parser, opt_name, opt)
 
 
     args = parser.parse_args()
