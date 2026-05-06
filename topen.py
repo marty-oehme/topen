@@ -307,7 +307,7 @@ class TConf:
     Contains all the configuration options that can affect Topen note creation.
     """
 
-    task_id: int
+    task_id: int | None = None
     """The id (or uuid) of the task to edit a note for."""
     command: str = "edit"
     """The subcommand to execute (edit, path, clean)."""
