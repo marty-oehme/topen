@@ -63,7 +63,7 @@ class TestBuildConfigPrecedence:
         cfg = build_config()
         assert cfg.notes_ext == "from-env"
 
-    def test_circular_env_vars(self, isolate_env, monkeypatch, fake_id):
+    def test_circular_env_vars(self, isolate_env, monkeypatch, fake_id, fake_rc):
         """Test environment variables with circular references."""
         for k, v in {
             "TOPEN_NOTES_DIR": "$TOPEN_NOTES_DIR/subdir",
