@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Inform user that no annotation is added if they do not write any file
+- ! Subcommands for actions, with `edit` being the default subcommand invoked
 
 ### Fixed
 

@@ -37,11 +37,7 @@ def main(cfg: "TConf | None" = None, io: "_IO | None" = None) -> int:
     `defaults -> taskrc -> env vars -> cli opts`
     with cli options having the highest priority.
 
-    Then uses those options to get the task corresponding to the task id passed
-    in as an argument, finds the matching notes file path and opens an editor
-    pointing to the file.
-
-    If the task does not yet have a note annotation it also adds it automatically.
+    Then dispatches to the appropriate subcommand handler.
 
     Returns the status code as int, 0 for success, 1 for error.
     """
@@ -50,6 +46,26 @@ def main(cfg: "TConf | None" = None, io: "_IO | None" = None) -> int:
     if not io:
         io = _IO(quiet=cfg.notes_quiet)
 
+    if cfg.command == "edit":
+        return _cmd_edit(cfg, io)
+    elif cfg.command == "path":
+        return _cmd_path(cfg, io)
+    else:
+        io.err(f"Unknown command: {cfg.command}\n")
+        return 1
+
+
+def _cmd_edit(cfg: "TConf", io: "_IO") -> int:
+    """Open or create a note for a task.
+
+    Uses the configured options to get the task corresponding to the task id
+    passed in as an argument, finds the matching notes file path and opens an
+    editor pointing to the file.
+
+    If the task does not yet have a note annotation it also adds it automatically.
+
+    Returns the status code as int, 0 for success, 1 for error.
+    """
     if not cfg.task_id:
         io.err("Please provide task ID as argument.\n")
         return 1
@@ -79,6 +95,12 @@ def main(cfg: "TConf | None" = None, io: "_IO | None" = None) -> int:
         return 0
     io.out("No note file, doing nothing.")
     return 0
+
+
+def _cmd_path(cfg: "TConf", io: "_IO") -> int:
+    """Print the note file path for a task."""
+    io.err("Not yet implemented.\n")
+    return 1
 
 
 def get_task(id: str | int, data_location: Path) -> Task:
@@ -251,6 +273,8 @@ class TConf:
 
     task_id: int
     """The id (or uuid) of the task to edit a note for."""
+    command: str = "edit"
+    """The subcommand to execute (edit, path, clean)."""
     task_rc: Path = OPTIONS["task_rc"].default
     """The path to the taskwarrior taskrc file. Can be absolute or relative to cwd."""
 
@@ -314,11 +338,59 @@ def build_config() -> TConf:
     return TConf.from_dict({k: v for k, v in merged.items() if v is not None})
 
 
+SUBCOMMANDS = ("edit", "path", "clean")
+
+SHARED_OPTION_KEYS = (
+    "task_rc",
+    "task_data",
+    "notes_dir",
+    "notes_ext",
+    "notes_annot",
+    "notes_quiet",
+)
+
+
+def _add_opt_to_parser(parser: argparse.ArgumentParser, key: str, opt: Opt) -> None:
+    """Add a single OPTIONS entry to an argparse parser."""
+    if opt.cli is None:
+        return
+    if opt.is_flag:
+        parser.add_argument(
+            *opt.cli,
+            dest=key,
+            help=opt.help_text,
+            default=None,
+            action="store_true",
+        )
+    else:
+        parser.add_argument(
+            *opt.cli,
+            dest=key,
+            metavar=opt.metavar,
+            help=opt.help_text,
+            type=opt.cast or str,
+            default=None,
+        )
+
+
 def parse_cli() -> dict:
     """Parse cli options and arguments.
 
     Returns them as a simple dict object.
     """
+    # Inject 'edit' subcommand for backward compat: `topen 42` → `topen edit 42`
+    if (
+        len(sys.argv) > 1
+        and sys.argv[1] not in SUBCOMMANDS
+        and sys.argv[1] not in ("-h", "--help")
+    ):
+        sys.argv.insert(1, "edit")
+
+    # Parent parser for options shared across all subcommands
+    shared_parser = argparse.ArgumentParser(add_help=False)
+    for key in SHARED_OPTION_KEYS:
+        _add_opt_to_parser(shared_parser, key, OPTIONS[key])
+
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description="Taskwarrior note editing made easy.",
@@ -329,32 +401,39 @@ to let you see that there exists a note file next time
 you view the task.
 """,
     )
-    _ = parser.add_argument(
+    # Shared options at root level: `topen --notes-dir /foo clean`
+    for key in SHARED_OPTION_KEYS:
+        _add_opt_to_parser(parser, key, OPTIONS[key])
+
+    subparsers = parser.add_subparsers(dest="command")
+
+    # edit subparser
+    edit_parser = subparsers.add_parser(
+        "edit",
+        help="Open or create a note for a task (default)",
+        parents=[shared_parser],
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    edit_parser.add_argument(
         "id", help="The id/uuid of the taskwarrior task for which we edit notes"
     )
-    for key, opt in OPTIONS.items():
-        if opt.cli is None:
-            continue
-        if opt.is_flag:
-            parser.add_argument(
-                *opt.cli,
-                dest=key,
-                help=opt.help_text,
-                default=None,
-                action="store_true",
-            )
-            continue
-        parser.add_argument(
-            *opt.cli,
-            dest=key,
-            metavar=opt.metavar,
-            help=opt.help_text,
-            type=opt.cast or str,
-            default=None,
-        )
+    # Edit-specific options
+    _add_opt_to_parser(edit_parser, "notes_editor", OPTIONS["notes_editor"])
+    _add_opt_to_parser(edit_parser, "show_path", OPTIONS["show_path"])
+
+    # path subparser
+    path_parser = subparsers.add_parser(
+        "path",
+        help="Print the note file path for a task",
+        parents=[shared_parser],
+    )
+    path_parser.add_argument("id", help="The id/uuid of the taskwarrior task")
+
+
     args = parser.parse_args()
     cli_vals = {k: v for k, v in vars(args).items() if v is not None}
-    cli_vals["task_id"] = cli_vals.pop("id")
+    if "id" in cli_vals:
+        cli_vals["task_id"] = cli_vals.pop("id")
     return cli_vals
 
 

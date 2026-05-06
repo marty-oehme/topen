@@ -6,7 +6,11 @@ from topen import parse_cli
 class TestCli:
     def test_cli_minimum_id(self, monkeypatch):
         monkeypatch.setattr("sys.argv", ["topen", "42"])
-        assert parse_cli() == {"task_id": "42"}
+        assert parse_cli() == {"command": "edit", "task_id": "42"}
+
+    def test_cli_minimum_id_with_edit(self, monkeypatch):
+        monkeypatch.setattr("sys.argv", ["topen", "edit", "42"])
+        assert parse_cli() == {"command": "edit", "task_id": "42"}
 
     def test_cli_options(self, monkeypatch):
         monkeypatch.setattr(
@@ -23,6 +27,7 @@ class TestCli:
             ],
         )
         assert parse_cli() == {
+            "command": "edit",
             "task_id": "123",
             "notes_ext": "txt",
             "notes_editor": "vim",
