@@ -20,6 +20,7 @@ import argparse
 import configparser
 import os
 import re
+import shutil
 import subprocess
 import sys
 from dataclasses import asdict, dataclass
@@ -161,11 +162,18 @@ def _cmd_clean(cfg: "TConf", io: "_IO") -> int:
         task = tasks.get(fpath.stem)
         if task is None or task["status"] != "pending":
             try:
-                fpath.unlink()
-                io.out(f"Removed: {fpath}")
+                if cfg.notes_clean_delete:
+                    fpath.unlink()
+                    io.out(f"Removed: {fpath}")
+                else:
+                    newpath = cfg.notes_dir.joinpath("archive", fpath.name)
+                    if not newpath.parent.exists():
+                        newpath.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.move(fpath, newpath)
+                    io.out(f"Archived: {fpath} -> {newpath}")
                 removed += 1
             except OSError as e:
-                io.err(f"Could not remove {fpath}: {e}\n")
+                io.err(f"Could not clean {fpath}: {e}\n")
                 return 1
 
     io.out(f"Cleaned {removed} note{'' if removed == 1 else 's'}.")
@@ -332,6 +340,16 @@ OPTIONS: dict[str, Opt] = {
         help_text="Silence any verbosely displayed information",
         is_flag=True,
     ),
+    "notes_clean_delete": Opt(
+        ("--delete",),
+        "TOPEN_CLEAN_DELETE",
+        "notes.clean.delete",
+        default=False,
+        cast=_strtobool,
+        help_text="Delete cleaned notes files from file system, do not just archive them (DESTRUCTIVE)",
+        is_flag=True,
+        cli_subcommand=SUBCOMMANDS["clean"],
+    ),
 }
 
 
@@ -363,6 +381,8 @@ class TConf:
     """The editor to open note files with."""
     notes_quiet: bool = OPTIONS["notes_quiet"].default
     """If set topen will give no feedback on note editing."""
+    notes_clean_delete: bool = OPTIONS["notes_clean_delete"].default
+    """Delete cleaned notes from file system instead of archiving."""
 
     def __post_init__(self):
         self.task_rc = _expand_path(self.task_rc)

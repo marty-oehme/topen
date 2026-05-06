@@ -92,6 +92,7 @@ notes.ext # set the note file extension
 notes.annot # set the annotation added to tasks with notes
 notes.editor # set the editor used to open notes
 notes.quiet # set topen to hide all verbose information during use
+notes.clean.delete # set topen to (DESTRUCTIVELY) delete notes when cleaning
 ```
 
 ### Environment variables
@@ -110,6 +111,7 @@ TOPEN_NOTES_EXT= # set the note file extension
 TOPEN_NOTES_ANNOT= # set the annotation added to tasks with notes
 TOPEN_NOTES_EDITOR= # set the editor used to open notes
 TOPEN_NOTES_QUIET= # set topen to hide all verbose information during use
+TOPEN_CLEAN_DELETE= # set topen to (DESTRUCTIVELY) delete notes when cleaning
 ```
 
 ### CLI options
@@ -123,10 +125,12 @@ To find out all the available options use `topen --help`.
 
 ### Delete existing notes
 
-If you want to clean up your notes directory the easiest way is with `topen clean`
+If you want to clean up your notes directory the easiest way is with `topen clean`.
 This command takes all notes belonging to taskwarrior tasks that are not pending (so, completed, deleted, or missing),
-and deletes them.
-_BE CAREFUL_ with this command as it is a destructive operation - your notes will be __GONE__ after running it.
+and archives them by adding them to the `archive/` directory within the notes directory.
+
+You can also actually delete these notes instead with `topen clean --delete` but
+_BE CAREFUL_ with this command as it is a __destructive__ operation - your notes will be __GONE__ after running it.
 
 But what if you want to delete individual notes, manually selecting them?
 

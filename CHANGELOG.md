@@ -12,7 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Inform user that no annotation is added if they do not write any file
 - ! Subcommands for actions, with `edit` being the default subcommand invoked
 - `path` subcommand which displays exact note path to user
-- `clean` subcommand which removes notes for non-pending tasks
+- `clean` subcommand which archives notes for non-pending tasks
+- `clean --delete` option which DESTRUCTIVELY removes notes for non-pending tasks
 
 ### Fixed
 
