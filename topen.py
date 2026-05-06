@@ -162,7 +162,7 @@ def _cmd_clean(cfg: "TConf", io: "_IO") -> int:
         task = tasks.get(fpath.stem)
         if task is None or task["status"] != "pending":
             try:
-                if cfg.notes_clean_delete:
+                if cfg.clean_delete:
                     fpath.unlink()
                     io.out(f"Removed: {fpath}")
                 else:
@@ -340,10 +340,10 @@ OPTIONS: dict[str, Opt] = {
         help_text="Silence any verbosely displayed information",
         is_flag=True,
     ),
-    "notes_clean_delete": Opt(
+    "clean_delete": Opt(
         ("--delete",),
         "TOPEN_CLEAN_DELETE",
-        "notes.clean.delete",
+        "clean.delete",
         default=False,
         cast=_strtobool,
         help_text="Delete cleaned notes files from file system, do not just archive them (DESTRUCTIVE)",
@@ -381,7 +381,7 @@ class TConf:
     """The editor to open note files with."""
     notes_quiet: bool = OPTIONS["notes_quiet"].default
     """If set topen will give no feedback on note editing."""
-    notes_clean_delete: bool = OPTIONS["notes_clean_delete"].default
+    clean_delete: bool = OPTIONS["clean_delete"].default
     """Delete cleaned notes from file system instead of archiving."""
 
     def __post_init__(self):

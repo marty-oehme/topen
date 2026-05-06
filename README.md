@@ -92,7 +92,7 @@ notes.ext=md             # set the note file extension
 notes.annot=Note         # set the annotation added to tasks with notes
 notes.editor=nano        # set the editor used to open notes
 notes.quiet=False        # set topen to hide all verbose information during use
-notes.clean.delete=False # set topen to (DESTRUCTIVELY) delete notes when cleaning
+clean.delete=False       # set topen to (DESTRUCTIVELY) delete notes when cleaning
 ```
 
 ### Environment variables
