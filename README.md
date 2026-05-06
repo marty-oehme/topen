@@ -112,6 +112,7 @@ TOPEN_NOTES_ANNOT=  # set the annotation added to tasks with notes
 TOPEN_NOTES_EDITOR= # set the editor used to open notes
 TOPEN_NOTES_QUIET=  # set topen to hide all verbose information during use
 TOPEN_CLEAN_DELETE= # set topen to (DESTRUCTIVELY) delete notes when cleaning
+TOPEN_CLEAN_DRYRUN= # set topen to prevent cleaning notes but show operations
 ```
 
 ### CLI options
@@ -131,6 +132,8 @@ and archives them by adding them to the `archive/` directory within the notes di
 
 You can also actually delete these notes instead with `topen clean --delete` but
 _BE CAREFUL_ with this command as it is a __destructive__ operation - your notes will be __GONE__ after running it.
+
+Ideally check that your are not deleting anything you don't wish to with `topen clean --dryrun` before.
 
 But what if you want to delete individual notes, manually selecting them?
 

@@ -153,6 +153,9 @@ def _cmd_clean(cfg: "TConf", io: "_IO") -> int:
 
     removed = 0
     pattern = f"*.{cfg.notes_ext}"
+    delete = cfg.clean_delete
+    dryrun = cfg.clean_dryrun
+    archive_dir = cfg.notes_dir.joinpath("archived")
     for fpath in cfg.notes_dir.glob(pattern):
         if not fpath.is_file():
             continue
@@ -162,14 +165,16 @@ def _cmd_clean(cfg: "TConf", io: "_IO") -> int:
         task = tasks.get(fpath.stem)
         if task is None or task["status"] != "pending":
             try:
-                if cfg.clean_delete:
-                    fpath.unlink()
+                if delete:
+                    if not dryrun:
+                        fpath.unlink()
                     io.out(f"Removed: {fpath}")
                 else:
-                    newpath = cfg.notes_dir.joinpath("archive", fpath.name)
-                    if not newpath.parent.exists():
+                    newpath = archive_dir.joinpath(fpath.name)
+                    if not newpath.parent.exists() and not dryrun:
                         newpath.parent.mkdir(parents=True, exist_ok=True)
-                    shutil.move(fpath, newpath)
+                    if not dryrun:
+                        shutil.move(fpath, newpath)
                     io.out(f"Archived: {fpath} -> {newpath}")
                 removed += 1
             except OSError as e:
@@ -350,6 +355,19 @@ OPTIONS: dict[str, Opt] = {
         is_flag=True,
         cli_subcommand=SUBCOMMANDS["clean"],
     ),
+    "clean_dryrun": Opt(
+        (
+            "-n",
+            "--dryrun",
+        ),
+        "TOPEN_CLEAN_DRYRUN",
+        None, # does not make sense in taskrc
+        default=False,
+        cast=_strtobool,
+        help_text="Do not clean any note files but show what topen would do",
+        is_flag=True,
+        cli_subcommand=SUBCOMMANDS["clean"],
+    ),
 }
 
 
@@ -383,6 +401,8 @@ class TConf:
     """If set topen will give no feedback on note editing."""
     clean_delete: bool = OPTIONS["clean_delete"].default
     """Delete cleaned notes from file system instead of archiving."""
+    clean_dryrun: bool = OPTIONS["clean_dryrun"].default
+    """Do not process cleaning operations but show what would be done."""
 
     def __post_init__(self):
         self.task_rc = _expand_path(self.task_rc)
