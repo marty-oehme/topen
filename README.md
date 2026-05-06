@@ -123,6 +123,13 @@ To find out all the available options use `topen --help`.
 
 ### Delete existing notes
 
+If you want to clean up your notes directory the easiest way is with `topen clean`
+This command takes all notes belonging to taskwarrior tasks that are not pending (so, completed, deleted, or missing),
+and deletes them.
+_BE CAREFUL_ with this command as it is a destructive operation - your notes will be __GONE__ after running it.
+
+But what if you want to delete individual notes, manually selecting them?
+
 Using the `topen path` subcommand, you can manually delete notes which you don't need anymore.
 
 Simply use `rm -f $(topen path <note-id>)` to delete the file from the filesystem.

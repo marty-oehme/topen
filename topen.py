@@ -19,6 +19,7 @@ read the configuration in part from a `taskrc` file using the utility function
 import argparse
 import configparser
 import os
+import re
 import subprocess
 import sys
 from dataclasses import asdict, dataclass
@@ -28,6 +29,10 @@ from typing import Any, Callable, Self, cast
 from tasklib import Task, TaskWarrior
 
 NON_EXISTENT_PATH = Path("%%%%I_DONT_EXIST_%%%%")
+UUID_RE = re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+    re.IGNORECASE,
+)
 
 # list of all available sub-commands and cli aliases
 SUBCOMMANDS = {
@@ -129,14 +134,44 @@ def _cmd_path(cfg: "TConf", io: "_IO") -> int:
     io.out(str(fpath))
     io.quiet = prev_quiet
     return 0
- 
- 
+
+
 def _cmd_clean(cfg: "TConf", io: "_IO") -> int:
-    """Remove note files for tasks that no longer exist."""
-    io.err("Not yet implemented.\n")
-    return 1
- 
- 
+    """Remove note files for tasks that are not pending.
+
+    Scans the notes directory for note files, loads all tasks from
+    taskwarrior, and deletes any note file whose corresponding task
+    is either missing or has a status other than 'pending'.
+    """
+    if not cfg.notes_dir.is_dir():
+        io.out("Notes directory does not exist, nothing to clean.")
+        return 0
+
+    tw = TaskWarrior(data_location=cfg.task_data)
+    tasks = {str(t["uuid"]): t for t in tw.tasks.all()}
+
+    removed = 0
+    pattern = f"*.{cfg.notes_ext}"
+    for fpath in cfg.notes_dir.glob(pattern):
+        if not fpath.is_file():
+            continue
+        if not UUID_RE.match(fpath.stem):
+            continue
+
+        task = tasks.get(fpath.stem)
+        if task is None or task["status"] != "pending":
+            try:
+                fpath.unlink()
+                io.out(f"Removed: {fpath}")
+                removed += 1
+            except OSError as e:
+                io.err(f"Could not remove {fpath}: {e}\n")
+                return 1
+
+    io.out(f"Cleaned {removed} note{'' if removed == 1 else 's'}.")
+    return 0
+
+
 def get_task(id: str | int, data_location: Path) -> Task:
     """Finds a taskwarrior task from an id.
 
