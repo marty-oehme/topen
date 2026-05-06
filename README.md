@@ -108,12 +108,28 @@ TASKDATA= # taskwarrior data directory location
 TOPEN_NOTES_DIR= # set the notes directory itself
 TOPEN_NOTES_EXT= # set the note file extension
 TOPEN_NOTES_ANNOT= # set the annotation added to tasks with notes
-TOPEN_NOTES_EDITOR= notes.editor # set the editor used to open notes
+TOPEN_NOTES_EDITOR= # set the editor used to open notes
 TOPEN_NOTES_QUIET= # set topen to hide all verbose information during use
 ```
 
 ### CLI options
 
 Finally, each option can be set through the cli itself.
+Finally, each of the above options can be set through the cli itself.
 
 To find out all the available options use `topen --help`.
+
+## Tips & Tricks
+
+### Delete existing notes
+
+Using the `topen path` subcommand, you can manually delete notes which you don't need anymore.
+
+Simply use `rm -f $(topen path <note-id>)` to delete the file from the filesystem.
+You can wrap this in a function if you need it more often:
+
+```sh
+rmtopen() {
+  rm -f $(topen path "$1")
+}
+```

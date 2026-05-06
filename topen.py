@@ -98,9 +98,28 @@ def _cmd_edit(cfg: "TConf", io: "_IO") -> int:
 
 
 def _cmd_path(cfg: "TConf", io: "_IO") -> int:
-    """Print the note file path for a task."""
-    io.err("Not yet implemented.\n")
-    return 1
+    """Print the note file path for a task.
+
+    It does not matter if the note file for a task already exists or not
+    this always prints the path to its calculated file.
+    """
+    if not cfg.task_id:
+        io.err("Please provide task ID as argument.\n")
+        return 1
+
+    try:
+        task = get_task(id=cfg.task_id, data_location=cfg.task_data)
+        uuid = cast(str, task["uuid"])
+    except Task.DoesNotExist:
+        io.err(f"Could not find task for ID: {cfg.task_id}.\n")
+        return 1
+
+    fpath = get_notes_file(uuid, notes_dir=cfg.notes_dir, notes_ext=cfg.notes_ext)
+    prev_quiet = io.quiet
+    io.quiet = False
+    io.out(str(fpath))
+    io.quiet = prev_quiet
+    return 0
 
 
 def get_task(id: str | int, data_location: Path) -> Task:
