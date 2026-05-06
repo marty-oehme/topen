@@ -83,34 +83,34 @@ All options can be changed directly in your taskrc file.
 This may be most useful for settings which do not change often for you,
 such as the note extension or notes directory.
 
-The following settings are supported:
+The following settings are supported, shown here with their default values:
 
 ```ini
-data.location # used for the taskwarrior data directory
-notes.dir # set the notes directory itself
-notes.ext # set the note file extension
-notes.annot # set the annotation added to tasks with notes
-notes.editor # set the editor used to open notes
-notes.quiet # set topen to hide all verbose information during use
-notes.clean.delete # set topen to (DESTRUCTIVELY) delete notes when cleaning
+data.location=~/.task    # used for the taskwarrior data directory
+notes.dir=               # set the notes directory itself
+notes.ext=md             # set the note file extension
+notes.annot=Note         # set the annotation added to tasks with notes
+notes.editor=nano        # set the editor used to open notes
+notes.quiet=False        # set topen to hide all verbose information during use
+notes.clean.delete=False # set topen to (DESTRUCTIVELY) delete notes when cleaning
 ```
 
 ### Environment variables
 
 Each option can be changed through setting the corresponding environment variable.
 
-These are the same as the `taskrc` file options with a prepended `TOPEN_` and dots turned to underscores.
+These are generally the same as the `taskrc` file options with a prepended `TOPEN_` and dots turned to underscores.
 
 The following settings are supported:
 
 ```bash
-TASKRC= # taskwarrior config file location
-TASKDATA= # taskwarrior data directory location
-TOPEN_NOTES_DIR= # set the notes directory itself
-TOPEN_NOTES_EXT= # set the note file extension
-TOPEN_NOTES_ANNOT= # set the annotation added to tasks with notes
+TASKRC=             # taskwarrior config file location
+TASKDATA=           # taskwarrior data directory location
+TOPEN_NOTES_DIR=    # set the notes directory itself
+TOPEN_NOTES_EXT=    # set the note file extension
+TOPEN_NOTES_ANNOT=  # set the annotation added to tasks with notes
 TOPEN_NOTES_EDITOR= # set the editor used to open notes
-TOPEN_NOTES_QUIET= # set topen to hide all verbose information during use
+TOPEN_NOTES_QUIET=  # set topen to hide all verbose information during use
 TOPEN_CLEAN_DELETE= # set topen to (DESTRUCTIVELY) delete notes when cleaning
 ```
 
