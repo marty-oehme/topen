@@ -89,7 +89,7 @@ class TestCleanCommand:
 
         assert result == 0
 
-    def test_clean_reports_permission_error(self, tmp_path):
+    def test_clean_reports_permission_error_on_delete(self, tmp_path):
         notes_dir = tmp_path / "notes"
         notes_dir.mkdir()
         note_file = notes_dir / "11111111-1111-1111-1111-111111111111.md"
@@ -98,9 +98,12 @@ class TestCleanCommand:
         with patch("topen.TaskWarrior") as mock_tw:
             mock_tw.return_value.tasks.all.return_value = []
 
-            with patch("os.unlink", side_effect=PermissionError("denied")):
+            with patch.object(Path, "unlink", side_effect=PermissionError("denied")):
                 cfg = TConf(
-                    notes_dir=notes_dir, task_data=tmp_path, task_rc=tmp_path / "rc"
+                    notes_dir=notes_dir,
+                    task_data=tmp_path,
+                    task_rc=tmp_path / "rc",
+                    clean_delete=True,
                 )
                 io = _IO(quiet=False)
                 result = _cmd_clean(cfg, io)
