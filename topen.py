@@ -155,7 +155,7 @@ def _cmd_clean(cfg: "TConf", io: "_IO") -> int:
     pattern = f"*.{cfg.notes_ext}"
     delete = cfg.clean_delete
     dryrun = cfg.clean_dryrun
-    archive_dir = cfg.notes_dir.joinpath("archived")
+    archive_dir = cfg.clean_dir
     for fpath in cfg.notes_dir.glob(pattern):
         if not fpath.is_file():
             continue
@@ -355,13 +355,23 @@ OPTIONS: dict[str, Opt] = {
         is_flag=True,
         cli_subcommand=SUBCOMMANDS["clean"],
     ),
+    "clean_dir": Opt(
+        ("--archive-dir",),
+        "TOPEN_CLEAN_DIR",
+        "clean.dir",
+        default=None,  # resolved after notes dir in TConf.__post_init__
+        metavar="DIR",
+        cast=Path,
+        help_text="Set directory where cleaned notes are archived to",
+        cli_subcommand=SUBCOMMANDS["clean"],
+    ),
     "clean_dryrun": Opt(
         (
             "-n",
             "--dryrun",
         ),
         "TOPEN_CLEAN_DRYRUN",
-        None, # does not make sense in taskrc
+        None,  # does not make sense in taskrc
         default=False,
         cast=_strtobool,
         help_text="Do not clean any note files but show what topen would do",
@@ -401,6 +411,8 @@ class TConf:
     """If set topen will give no feedback on note editing."""
     clean_delete: bool = OPTIONS["clean_delete"].default
     """Delete cleaned notes from file system instead of archiving."""
+    clean_dir: Path = NON_EXISTENT_PATH
+    """The path to the the directory into which cleaned notes are archived."""
     clean_dryrun: bool = OPTIONS["clean_dryrun"].default
     """Do not process cleaning operations but show what would be done."""
 
@@ -410,6 +422,9 @@ class TConf:
         if self.notes_dir == NON_EXISTENT_PATH:
             self.notes_dir = self._default_notes_dir()
         self.notes_dir = _expand_path(self.notes_dir)
+        if self.clean_dir == NON_EXISTENT_PATH:
+            self.clean_dir = self.notes_dir.joinpath("archived")
+        self.clean_dir = _expand_path(self.clean_dir)
         if not self.notes_editor:
             self.notes_editor = (
                 os.getenv("EDITOR")

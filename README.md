@@ -93,6 +93,7 @@ notes.annot=Note         # set the annotation added to tasks with notes
 notes.editor=nano        # set the editor used to open notes
 notes.quiet=False        # set topen to hide all verbose information during use
 clean.delete=False       # set topen to (DESTRUCTIVELY) delete notes when cleaning
+clean.dir=               # set directory into which notes are archived on clean
 ```
 
 ### Environment variables
@@ -112,6 +113,7 @@ TOPEN_NOTES_ANNOT=  # set the annotation added to tasks with notes
 TOPEN_NOTES_EDITOR= # set the editor used to open notes
 TOPEN_NOTES_QUIET=  # set topen to hide all verbose information during use
 TOPEN_CLEAN_DELETE= # set topen to (DESTRUCTIVELY) delete notes when cleaning
+TOPEN_CLEAN_DIR=    # set directory into which notes are archived on clean
 TOPEN_CLEAN_DRYRUN= # set topen to prevent cleaning notes but show operations
 ```
 
