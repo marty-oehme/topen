@@ -303,9 +303,10 @@ def build_config() -> TConf:
     env = parse_env()
     cli = parse_cli()
 
-    rc_path = Path(
-        cli.get("task_rc") or env.get("task_rc") or OPTIONS["task_rc"].default
-    ).expanduser()
+    rc_string = cli.get("task_rc") or env.get("task_rc") or defaults.get("task_rc")
+    if not rc_string:
+        raise ValueError("Cannot find correct rc file string.")
+    rc_path = Path(rc_string).expanduser()
     defaults["task_rc"] = rc_path  # use XDG-included paths
     rc = parse_rc(rc_path) if rc_path.exists() else {}
 
