@@ -33,6 +33,7 @@ NON_EXISTENT_PATH = Path("%%%%I_DONT_EXIST_%%%%")
 SUBCOMMANDS = {
     "edit": "edit",
     "path": "path",
+    "clean": "clean",
 }
 
 
@@ -56,6 +57,8 @@ def main(cfg: "TConf | None" = None, io: "_IO | None" = None) -> int:
         return _cmd_edit(cfg, io)
     elif cfg.command == SUBCOMMANDS["path"]:
         return _cmd_path(cfg, io)
+    elif cfg.command == SUBCOMMANDS["clean"]:
+        return _cmd_clean(cfg, io)
     else:
         io.err(f"Unknown command: {cfg.command}\n")
         return 1
@@ -126,8 +129,14 @@ def _cmd_path(cfg: "TConf", io: "_IO") -> int:
     io.out(str(fpath))
     io.quiet = prev_quiet
     return 0
-
-
+ 
+ 
+def _cmd_clean(cfg: "TConf", io: "_IO") -> int:
+    """Remove note files for tasks that no longer exist."""
+    io.err("Not yet implemented.\n")
+    return 1
+ 
+ 
 def get_task(id: str | int, data_location: Path) -> Task:
     """Finds a taskwarrior task from an id.
 
@@ -455,6 +464,16 @@ you view the task.
     }.items():
         _add_opt_to_parser(path_parser, opt_name, opt)
 
+    # clean subparser
+    clean_parser = subparsers.add_parser(
+        SUBCOMMANDS["clean"],
+        help="Remove all note files for tasks that no longer exist",
+        parents=[shared_parser],
+    )
+    for opt_name, opt in {
+        k: v for k, v in OPTIONS.items() if v.cli_subcommand == SUBCOMMANDS["clean"]
+    }.items():
+        _add_opt_to_parser(clean_parser, opt_name, opt)
 
     args = parser.parse_args()
     cli_vals = {k: v for k, v in vars(args).items() if v is not None}
