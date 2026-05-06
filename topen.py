@@ -137,12 +137,23 @@ def _cmd_path(cfg: "TConf", io: "_IO") -> int:
     return 0
 
 
-def _cmd_clean(cfg: "TConf", io: "_IO") -> int:
-    """Remove note files for tasks that are not pending.
+def _is_cleanable(task: "Task | None") -> bool:
+    """Return True if a note file should be cleaned.
 
-    Scans the notes directory for note files, loads all tasks from
-    taskwarrior, and deletes any note file whose corresponding task
-    is either missing or has a status other than 'pending'.
+    A note is cleanable if its task is missing or not pending.
+    """
+    return task is None or task["status"] != "pending"
+
+
+def _cmd_clean(cfg: "TConf", io: "_IO") -> int:
+    """Archive or delete note files for tasks that are not pending.
+
+    Scans the notes directory, loads all tasks from taskwarrior, and
+    cleans any note file whose task is missing or not pending.
+
+    By default files are archived to the archive directory.
+    Use --delete to permanently remove files instead.
+    Use --dryrun to report what would happen without touching files.
     """
     if not cfg.notes_dir.is_dir():
         io.out("Notes directory does not exist, nothing to clean.")
@@ -151,37 +162,34 @@ def _cmd_clean(cfg: "TConf", io: "_IO") -> int:
     tw = TaskWarrior(data_location=cfg.task_data)
     tasks = {str(t["uuid"]): t for t in tw.tasks.all()}
 
-    removed = 0
-    pattern = f"*.{cfg.notes_ext}"
-    delete = cfg.clean_delete
-    dryrun = cfg.clean_dryrun
-    archive_dir = cfg.clean_dir
-    for fpath in cfg.notes_dir.glob(pattern):
-        if not fpath.is_file():
+    cleaned = 0
+    for fpath in sorted(cfg.notes_dir.glob(f"*.{cfg.notes_ext}")):
+        if not fpath.is_file() or not UUID_RE.match(fpath.stem):
             continue
-        if not UUID_RE.match(fpath.stem):
+        if not _is_cleanable(tasks.get(fpath.stem)):
             continue
 
-        task = tasks.get(fpath.stem)
-        if task is None or task["status"] != "pending":
-            try:
-                if delete:
-                    if not dryrun:
-                        fpath.unlink()
-                    io.out(f"Removed: {fpath}")
+        dest = None if cfg.clean_delete else cfg.clean_dir.joinpath(fpath.name)
+        try:
+            if not cfg.clean_dryrun:
+                if dest:
+                    _ensure_parent_dir(dest)
+                    shutil.move(fpath, dest)
                 else:
-                    newpath = archive_dir.joinpath(fpath.name)
-                    if not newpath.parent.exists() and not dryrun:
-                        newpath.parent.mkdir(parents=True, exist_ok=True)
-                    if not dryrun:
-                        shutil.move(fpath, newpath)
-                    io.out(f"Archived: {fpath} -> {newpath}")
-                removed += 1
-            except OSError as e:
-                io.err(f"Could not clean {fpath}: {e}\n")
-                return 1
+                    fpath.unlink()
+        except OSError as e:
+            io.err(f"Could not clean {fpath}: {e}\n")
+            return 1
 
-    io.out(f"Cleaned {removed} note{'' if removed == 1 else 's'}.")
+        verb = "remove" if cfg.clean_delete else "archive"
+        label = f"Would {verb}" if cfg.clean_dryrun else verb.capitalize()
+        if dest:
+            io.out(f"{label}: {fpath} -> {dest}")
+        else:
+            io.out(f"{label}: {fpath}")
+        cleaned += 1
+
+    io.out(f"Cleaned {cleaned} note{'s' if cleaned != 1 else ''}.")
     return 0
 
 
