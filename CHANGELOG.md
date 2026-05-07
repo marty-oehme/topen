@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Default paths are only calculated once, though users can now not use specifically '%%%%I_DONT_EXIST_%%%%' as a path for the taskrc file and task data directory.
+- Tasks with recurrence resolve to their parent (template) task so the note stays current once a single instance is completed
 
 ## [0.2.0] - 2025-04-09
 

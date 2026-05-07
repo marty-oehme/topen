@@ -25,7 +25,7 @@ import subprocess
 import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, Callable, Self, cast
+from typing import Any, Callable, Self
 
 from tasklib import Task, TaskWarrior
 
@@ -77,6 +77,9 @@ def _cmd_edit(cfg: "TConf", io: "_IO") -> int:
     passed in as an argument, finds the matching notes file path and opens an
     editor pointing to the file.
 
+    If the task is a recurring instance, the note is created for the parent
+    (master) task instead, so it persists across recurrences.
+
     If the task does not yet have a note annotation it also adds it automatically.
 
     Returns the status code as int, 0 for success, 1 for error.
@@ -87,10 +90,16 @@ def _cmd_edit(cfg: "TConf", io: "_IO") -> int:
 
     try:
         task = get_task(id=cfg.task_id, data_location=cfg.task_data)
-        uuid = cast(str, task["uuid"])
     except Task.DoesNotExist:
         io.err(f"Could not find task for ID: {cfg.task_id}.\n")
         return 1
+
+    resolved = _resolve_task(task, cfg.task_data)
+    uuid = str(resolved["uuid"])
+    if uuid != str(task["uuid"]):
+        io.out(
+            f"Note: Task {cfg.task_id} is a recurring instance, editing note for parent task."
+        )
 
     fpath = get_notes_file(uuid, notes_dir=cfg.notes_dir, notes_ext=cfg.notes_ext)
 
@@ -104,8 +113,8 @@ def _cmd_edit(cfg: "TConf", io: "_IO") -> int:
     open_editor(fpath, editor=cfg.notes_editor, io=io)
 
     if fpath.exists():
-        if is_annotation_missing(task, annotation_content=cfg.notes_annot):
-            add_annotation(task, annotation_content=cfg.notes_annot)
+        if is_annotation_missing(resolved, annotation_content=cfg.notes_annot):
+            add_annotation(resolved, annotation_content=cfg.notes_annot)
             io.out(f"Added annotation: {cfg.notes_annot}")
         return 0
     io.out("No note file, doing nothing.")
@@ -124,10 +133,16 @@ def _cmd_path(cfg: "TConf", io: "_IO") -> int:
 
     try:
         task = get_task(id=cfg.task_id, data_location=cfg.task_data)
-        uuid = cast(str, task["uuid"])
     except Task.DoesNotExist:
         io.err(f"Could not find task for ID: {cfg.task_id}.\n")
         return 1
+
+    resolved = _resolve_task(task, cfg.task_data)
+    uuid = str(resolved["uuid"])
+    if uuid != str(task["uuid"]):
+        io.err(
+            f"Note: task {cfg.task_id} is a recurring instance, using parent UUID {uuid}\n"
+        )
 
     fpath = get_notes_file(uuid, notes_dir=cfg.notes_dir, notes_ext=cfg.notes_ext)
     prev_quiet = io.quiet
@@ -140,9 +155,10 @@ def _cmd_path(cfg: "TConf", io: "_IO") -> int:
 def _is_cleanable(task: "Task | None") -> bool:
     """Return True if a note file should be cleaned.
 
-    A note is cleanable if its task is missing or not pending.
+    A note is cleanable if its task is missing or not active
+    (i.e., not pending and not recurring).
     """
-    return task is None or task["status"] != "pending"
+    return task is None or task["status"] not in ("pending", "recurring")
 
 
 def _cmd_clean(cfg: "TConf", io: "_IO") -> int:
@@ -205,6 +221,25 @@ def get_task(id: str | int, data_location: Path) -> Task:
         t = tw.tasks.get(uuid=id)
 
     return t
+
+
+def _resolve_task(task: Task, data_location: Path) -> Task:
+    """Resolve a task to its parent if it is a recurring instance.
+
+    If the task has a 'parent' attribute (meaning it is a recurring
+    instance), return the parent (master) task. Otherwise return the
+    task itself.
+
+    If the parent task cannot be found (e.g., it was deleted), fall
+    back to the original task.
+    """
+    parent_uuid = str(task["parent"])
+    if parent_uuid and parent_uuid != "None":
+        try:
+            return get_task(id=parent_uuid, data_location=data_location)
+        except Task.DoesNotExist:
+            return task
+    return task
 
 
 def get_notes_file(uuid: str, notes_dir: Path, notes_ext: str) -> Path:
