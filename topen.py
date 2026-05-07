@@ -94,12 +94,7 @@ def _cmd_edit(cfg: "TConf", io: "_IO") -> int:
         io.err(f"Could not find task for ID: {cfg.task_id}.\n")
         return 1
 
-    resolved = _resolve_task(task, cfg.task_data)
-    uuid = str(resolved["uuid"])
-    if uuid != str(task["uuid"]):
-        io.out(
-            f"Note: Task {cfg.task_id} is a recurring instance, editing note for parent task."
-        )
+    resolved, uuid = _resolve_task_with_notify(task, cfg, io)
 
     fpath = get_notes_file(uuid, notes_dir=cfg.notes_dir, notes_ext=cfg.notes_ext)
 
@@ -137,12 +132,7 @@ def _cmd_path(cfg: "TConf", io: "_IO") -> int:
         io.err(f"Could not find task for ID: {cfg.task_id}.\n")
         return 1
 
-    resolved = _resolve_task(task, cfg.task_data)
-    uuid = str(resolved["uuid"])
-    if uuid != str(task["uuid"]):
-        io.err(
-            f"Note: task {cfg.task_id} is a recurring instance, using parent UUID {uuid}\n"
-        )
+    _, uuid = _resolve_task_with_notify(task, cfg, io)
 
     fpath = get_notes_file(uuid, notes_dir=cfg.notes_dir, notes_ext=cfg.notes_ext)
     prev_quiet = io.quiet
@@ -240,6 +230,21 @@ def _resolve_task(task: Task, data_location: Path) -> Task:
         except Task.DoesNotExist:
             return task
     return task
+
+
+def _resolve_task_with_notify(task: Task, cfg: "TConf", io: "_IO") -> tuple[Task, str]:
+    """Resolve a task to its parent if it is a recurring instance.
+
+    Returns the resolved task and its UUID. Prints a notification
+    to stdout if a redirect occurred.
+    """
+    resolved = _resolve_task(task, cfg.task_data)
+    uuid = str(resolved["uuid"])
+    if uuid != str(task["uuid"]):
+        io.out(
+            f"Note: task {cfg.task_id} is a recurring instance, using parent task for note"
+        )
+    return resolved, uuid
 
 
 def get_notes_file(uuid: str, notes_dir: Path, notes_ext: str) -> Path:
