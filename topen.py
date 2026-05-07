@@ -85,13 +85,13 @@ def _cmd_edit(cfg: "TConf", io: "_IO") -> int:
     Returns the status code as int, 0 for success, 1 for error.
     """
     if not cfg.task_id:
-        io.err("Please provide task ID as argument.\n")
+        io.err("Please provide task ID as argument\n")
         return 1
 
     try:
         task = get_task(id=cfg.task_id, data_location=cfg.task_data)
     except Task.DoesNotExist:
-        io.err(f"Could not find task for ID: {cfg.task_id}.\n")
+        io.err(f"Could not find task for ID: {cfg.task_id}\n")
         return 1
 
     resolved, uuid = _resolve_task_with_notify(task, cfg, io)
@@ -101,18 +101,18 @@ def _cmd_edit(cfg: "TConf", io: "_IO") -> int:
     try:
         _ensure_parent_dir(fpath)
     except PermissionError:
-        io.err(f"Could not write required directories for path: {fpath}.\n")
+        io.err(f"Could not write required directories for path: {fpath}\n")
         return 1
 
-    io.out(f"Editing note: {fpath}")
+    io.out(f"Editing note: {fpath}\n")
     open_editor(fpath, editor=cfg.notes_editor, io=io)
 
     if fpath.exists():
         if is_annotation_missing(resolved, annotation_content=cfg.notes_annot):
             add_annotation(resolved, annotation_content=cfg.notes_annot)
-            io.out(f"Added annotation: {cfg.notes_annot}")
+            io.out(f"Added annotation: {cfg.notes_annot}\n")
         return 0
-    io.out("No note file, doing nothing.")
+    io.out("No note file, doing nothing\n")
     return 0
 
 
@@ -123,13 +123,13 @@ def _cmd_path(cfg: "TConf", io: "_IO") -> int:
     this always prints the path to its calculated file.
     """
     if not cfg.task_id:
-        io.err("Please provide task ID as argument.\n")
+        io.err("Please provide task ID as argument\n")
         return 1
 
     try:
         task = get_task(id=cfg.task_id, data_location=cfg.task_data)
     except Task.DoesNotExist:
-        io.err(f"Could not find task for ID: {cfg.task_id}.\n")
+        io.err(f"Could not find task for ID: {cfg.task_id}\n")
         return 1
 
     _, uuid = _resolve_task_with_notify(task, cfg, io)
@@ -137,7 +137,7 @@ def _cmd_path(cfg: "TConf", io: "_IO") -> int:
     fpath = get_notes_file(uuid, notes_dir=cfg.notes_dir, notes_ext=cfg.notes_ext)
     prev_quiet = io.quiet
     io.quiet = False
-    io.out(str(fpath))
+    io.out(f"{str(fpath)}\n")
     io.quiet = prev_quiet
     return 0
 
@@ -162,7 +162,7 @@ def _cmd_clean(cfg: "TConf", io: "_IO") -> int:
     Use --dryrun to report what would happen without touching files.
     """
     if not cfg.notes_dir.is_dir():
-        io.out("Notes directory does not exist, nothing to clean.")
+        io.out("Notes directory does not exist, nothing to clean\n")
         return 0
 
     tw = TaskWarrior(data_location=cfg.task_data)
@@ -190,12 +190,12 @@ def _cmd_clean(cfg: "TConf", io: "_IO") -> int:
         verb = "remove" if cfg.clean_delete else "archive"
         label = f"Would {verb}" if cfg.clean_dryrun else verb.capitalize()
         if dest:
-            io.out(f"{label}: {fpath} -> {dest}")
+            io.out(f"{label}: {fpath} -> {dest}\n")
         else:
-            io.out(f"{label}: {fpath}")
+            io.out(f"{label}: {fpath}\n")
         cleaned += 1
 
-    io.out(f"Cleaned {cleaned} note{'s' if cleaned != 1 else ''}.")
+    io.out(f"Cleaned {cleaned} note{'s' if cleaned != 1 else ''}\n")
     return 0
 
 
@@ -242,7 +242,7 @@ def _resolve_task_with_notify(task: Task, cfg: "TConf", io: "_IO") -> tuple[Task
     uuid = str(resolved["uuid"])
     if uuid != str(task["uuid"]):
         io.out(
-            f"Note: task {cfg.task_id} is a recurring instance, using parent task for note"
+            f"Note: task {cfg.task_id} is a recurring instance, using parent task for note\n"
         )
     return resolved, uuid
 
@@ -258,7 +258,7 @@ def open_editor(file: Path, editor: str, io: "_IO | None" = None) -> None:
         _ = subprocess.run([editor, str(file)], check=True)
     except subprocess.CalledProcessError:
         if io:
-            io.err("Editor exited with an error, aborting.\n")
+            io.err("Editor exited with an error, aborting\n")
 
 
 def is_annotation_missing(task: Task, annotation_content: str) -> bool:
@@ -656,7 +656,7 @@ class _IO:
 
     def out(self, text: str) -> None:
         if not self.quiet:
-            print(text)
+            sys.stdout.write(text)
 
     def err(self, text: str) -> None:
         sys.stderr.write(text)
