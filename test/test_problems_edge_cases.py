@@ -6,6 +6,8 @@ from unittest.mock import patch
 
 import pytest
 
+from tasklib import Task
+
 from topen import _ensure_parent_dir, get_notes_file, get_task, parse_env, parse_rc
 
 
@@ -14,17 +16,25 @@ class TestFSEdgeCases:
 
     def test_nonexistent_task_id(self, tmp_path):
         """Test raised error for non-existent task IDs."""
-        with patch("tasklib.TaskWarrior") as mock_tw:
+        with patch("topen.TaskWarrior") as mock_tw:
             mock_tw.return_value.tasks.get.side_effect = [
-                Exception("Task not found"),
+                Task.DoesNotExist(
+                    "Task matching query does not exist. Lookup parameters were {'id': '999999'}"
+                ),
+                Task.DoesNotExist(
+                    "Task matching query does not exist. Lookup parameters were {'uuid': '999999'}"
+                ),
             ]
 
             with pytest.raises(
-                Exception,
+                Task.DoesNotExist,
                 match="Task matching query does not exist. Lookup parameters were {'uuid': '999999'}",
             ):
                 get_task("999999", tmp_path)
 
+    @pytest.mark.skipif(
+        os.getuid() == 0, reason="chmod has no effect when running as root"
+    )
     def test_read_only_notes_directory(self, tmp_path):
         """Test raised error when notes directory is read-only."""
         notes_dir = tmp_path / "read_only_notes"
@@ -39,7 +49,7 @@ class TestFSEdgeCases:
 
     def test_symlink_notes_directory(self, tmp_path):
         """Test behavior with symlinked notes directory,
-        reading the linked dir instead of the real dir. """
+        reading the linked dir instead of the real dir."""
         real_dir = tmp_path / "real_notes"
         real_dir.mkdir()
         link_dir = tmp_path / "linked_notes"
